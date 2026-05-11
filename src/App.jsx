@@ -1,52 +1,237 @@
 import { useMemo, useState } from "react";
 
-const STORAGE_KEY = "numbers-playground-v1";
+const STORAGE_KEY = "numbers-playground-v2";
+const LEGACY_STORAGE_KEY = "numbers-playground-v1";
 
-const initialState = {
-  coins: 0,
-  unlockedItems: ["base-outfit"],
+const defaultState = {
+  coins: 30,
+  inventory: ["base-outfit", "room-sky"],
   equipped: {
     hat: null,
     outfit: "base-outfit",
-    accessory: null
+    accessory: null,
+    room: "room-sky"
   },
   progress: {
     maxNumber: 5,
     playedRounds: 0,
-    correctAnswers: 0
+    correctAnswers: 0,
+    streak: 0,
+    bestStreak: 0
   },
-  settings: {
-    sound: true
-  }
+  lastRewardDate: null
 };
 
-const items = [
-  { id: "sun-hat", type: "hat", name: "햇살 모자", price: 20, icon: "hat-sun" },
-  { id: "star-crown", type: "hat", name: "별 왕관", price: 45, icon: "hat-crown" },
-  { id: "base-outfit", type: "outfit", name: "분홍 원피스", price: 0, icon: "outfit-base" },
-  { id: "rainbow-outfit", type: "outfit", name: "무지개 옷", price: 35, icon: "outfit-rainbow" },
-  { id: "princess-dress", type: "outfit", name: "공주 드레스", price: 70, icon: "outfit-princess" },
-  { id: "heart-wand", type: "accessory", name: "하트 요술봉", price: 55, icon: "wand" }
+const numberWords = ["", "일", "이", "삼", "사", "오", "육", "칠", "팔", "구", "십"];
+const countObjects = [
+  { name: "별", image: "./assets/object-star.svg" },
+  { name: "사과", image: "./assets/object-apple.svg" },
+  { name: "하트", image: "./assets/object-heart.svg" }
+];
+
+const shopItems = [
+  {
+    id: "room-sky",
+    type: "room",
+    name: "공주 놀이방",
+    price: 0,
+    rarity: "기본",
+    image: "./assets/generated-princess-room.png",
+    description: "새로 만든 따뜻한 공주방"
+  },
+  {
+    id: "room-castle",
+    type: "room",
+    name: "성 안뜰",
+    price: 10,
+    rarity: "희귀",
+    image: "./assets/generated-castle-courtyard.png",
+    description: "새로 만든 햇살 가득한 성 안뜰"
+  },
+  {
+    id: "room-garden",
+    type: "room",
+    name: "꽃 정원",
+    price: 7,
+    rarity: "고급",
+    image: "./assets/generated-flower-garden.png",
+    description: "새로 만든 꽃과 정자 배경"
+  },
+  {
+    id: "base-outfit",
+    type: "outfit",
+    name: "분홍 원피스",
+    price: 0,
+    rarity: "기본",
+    image: "./assets/avatar-gen-pink-dress.png",
+    previewImage: "./assets/shop-pink-dress-generated.png",
+    avatarImage: "./assets/avatar-gen-pink-dress.png",
+    description: "캐릭터 몸에 맞춰 만든 기본 드레스"
+  },
+  {
+    id: "rainbow-outfit",
+    type: "outfit",
+    name: "무지개 드레스",
+    price: 5,
+    rarity: "고급",
+    image: "./assets/outfit-rainbow.svg",
+    previewImage: "./assets/shop-rainbow-dress-v3.png",
+    avatarImage: "./assets/avatar-gen-rainbow-dress.png",
+    description: "색깔이 반짝이는 드레스"
+  },
+  {
+    id: "princess-dress",
+    type: "outfit",
+    name: "공주 드레스",
+    price: 8,
+    rarity: "희귀",
+    image: "./assets/outfit-princess.svg",
+    previewImage: "./assets/shop-princess-dress-v3.png",
+    avatarImage: "./assets/avatar-gen-princess-dress.png",
+    description: "상점의 대표 공주 옷"
+  },
+  {
+    id: "royal-dress",
+    type: "outfit",
+    name: "왕실 드레스",
+    price: 10,
+    rarity: "전설",
+    image: "./assets/outfit-royal.svg",
+    previewImage: "./assets/shop-royal-dress-v3.png",
+    avatarImage: "./assets/avatar-gen-royal-dress.png",
+    description: "오래 모으면 살 수 있는 특별한 옷"
+  },
+  {
+    id: "sun-hat",
+    type: "hat",
+    name: "햇살 모자",
+    price: 3,
+    rarity: "고급",
+    image: "./assets/hat-sun.svg",
+    previewImage: "./assets/shop-sun-hat-v3.png",
+    avatarImage: "./assets/avatar-gen-sun-hat.png",
+    description: "노란 리본이 달린 모자"
+  },
+  {
+    id: "star-crown",
+    type: "hat",
+    name: "별 왕관",
+    price: 6,
+    rarity: "희귀",
+    image: "./assets/hat-crown.svg",
+    previewImage: "./assets/shop-star-crown-v3.png",
+    avatarImage: "./assets/avatar-gen-star-crown.png",
+    description: "별이 달린 작은 왕관"
+  },
+  {
+    id: "flower-tiara",
+    type: "hat",
+    name: "꽃 티아라",
+    price: 8,
+    rarity: "희귀",
+    image: "./assets/hat-tiara.svg",
+    previewImage: "./assets/shop-flower-tiara-v3.png",
+    avatarImage: "./assets/avatar-gen-flower-tiara.png",
+    description: "꽃잎 장식 머리띠"
+  },
+  {
+    id: "heart-wand",
+    type: "accessory",
+    name: "하트 요술봉",
+    price: 5,
+    rarity: "고급",
+    image: "./assets/acc-wand.svg",
+    previewImage: "./assets/gen-heart-wand.png",
+    avatarImage: "./assets/avatar-gen-heart-wand.png",
+    description: "정답을 응원하는 요술봉"
+  },
+  {
+    id: "butterfly-wings",
+    type: "accessory",
+    name: "나비 날개",
+    price: 10,
+    rarity: "전설",
+    image: "./assets/acc-wings.svg",
+    previewImage: "./assets/shop-butterfly-wings-v3.png",
+    avatarImage: "./assets/avatar-gen-butterfly-wings.png",
+    description: "캐릭터 뒤에 달리는 날개"
+  }
+];
+
+const shopCategories = [
+  { id: "all", label: "전체" },
+  { id: "outfit", label: "옷" },
+  { id: "hat", label: "모자" },
+  { id: "accessory", label: "소품" },
+  { id: "room", label: "방" }
 ];
 
 const gameCards = [
-  { id: "find", title: "숫자 찾기", mark: "?", color: "coral" },
-  { id: "count", title: "몇 개일까", mark: "●", color: "mint" },
-  { id: "order", title: "차례차례", mark: "1 2", color: "sky" },
-  { id: "feed", title: "간식 주기", mark: "★", color: "lemon" },
-  { id: "memory", title: "기억하기", mark: "!", color: "lilac" }
+  {
+    id: "find",
+    title: "숫자 찾기",
+    subtitle: "목소리를 듣고 숫자를 골라요",
+    image: "./assets/game-find.svg",
+    color: "coral",
+    reward: 9
+  },
+  {
+    id: "count",
+    title: "몇 개일까",
+    subtitle: "그림을 세고 숫자를 눌러요",
+    image: "./assets/game-count.svg",
+    color: "mint",
+    reward: 9
+  },
+  {
+    id: "order",
+    title: "차례차례",
+    subtitle: "1부터 순서대로 눌러요",
+    image: "./assets/game-order.svg",
+    color: "sky",
+    reward: 10
+  },
+  {
+    id: "memory",
+    title: "카드 기억하기",
+    subtitle: "같은 숫자 카드를 찾아요",
+    image: "./assets/game-memory.svg",
+    color: "lilac",
+    reward: 16
+  }
 ];
 
-const praise = ["좋았어!", "잘했어!", "멋져!", "한 번 더!", "최고야!"];
-const snackIcons = ["🍓", "🍪", "🍎", "🧁", "⭐"];
+const praise = ["잘했어!", "멋져!", "좋았어!", "정말 정확해!", "연속 성공!"];
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function normalizeState(rawState) {
+  const legacyInventory = rawState?.inventory ?? rawState?.unlockedItems ?? [];
+  const inventory = Array.from(new Set([...defaultState.inventory, ...legacyInventory]));
+  return {
+    ...defaultState,
+    ...rawState,
+    inventory,
+    equipped: {
+      ...defaultState.equipped,
+      ...rawState?.equipped
+    },
+    progress: {
+      ...defaultState.progress,
+      ...rawState?.progress
+    }
+  };
+}
 
 function loadState() {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return initialState;
-    return { ...initialState, ...JSON.parse(stored) };
+    const stored = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!stored) return defaultState;
+    return normalizeState(JSON.parse(stored));
   } catch {
-    return initialState;
+    return defaultState;
   }
 }
 
@@ -68,12 +253,41 @@ function makeOptions(answer, maxNumber) {
   return shuffle([answer, ...shuffle(pool).slice(0, 3)]);
 }
 
+function objectParticle(word) {
+  return ["일", "삼", "육", "칠", "팔", "십"].includes(word) ? "을" : "를";
+}
+
+function getKoreanVoice() {
+  const voices = window.speechSynthesis.getVoices();
+  const koreanVoices = voices.filter((voice) => voice.lang?.toLowerCase().startsWith("ko"));
+  const preferredNames = ["Yuna", "Google", "Microsoft", "Heami", "Yuri", "한국", "Korean"];
+  return (
+    preferredNames
+      .map((name) => koreanVoices.find((voice) => voice.name.includes(name)))
+      .find(Boolean) ??
+    koreanVoices[0] ??
+    null
+  );
+}
+
+function speakNumber(number) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const word = numberWords[number] ?? String(number);
+  const utterance = new SpeechSynthesisUtterance(`${word}${objectParticle(word)} 찾아주세요.`);
+  utterance.lang = "ko-KR";
+  utterance.voice = getKoreanVoice();
+  utterance.rate = 0.88;
+  utterance.pitch = 1.04;
+  utterance.volume = 1;
+  window.speechSynthesis.speak(utterance);
+}
+
 function makeRound(gameId, maxNumber) {
   const answer = rand(maxNumber);
   if (gameId === "order") {
     return {
       gameId,
-      target: 1,
       answer: maxNumber,
       selected: [],
       next: 1,
@@ -81,9 +295,25 @@ function makeRound(gameId, maxNumber) {
     };
   }
   if (gameId === "memory") {
-    return { gameId, answer, options: makeOptions(answer, maxNumber), hidden: false };
+    const pairCount = Math.min(maxNumber, 4);
+    const values = shuffle(Array.from({ length: maxNumber }, (_, index) => index + 1)).slice(0, pairCount);
+    const cards = shuffle(values.flatMap((value) => [0, 1].map((copy) => ({
+      id: `${value}-${copy}`,
+      value,
+      matched: false
+    }))));
+    return { gameId, cards, flipped: [], resolving: false };
   }
-  return { gameId, answer, options: makeOptions(answer, maxNumber), count: answer, fed: 0 };
+  if (gameId === "count") {
+    return {
+      gameId,
+      answer,
+      count: answer,
+      object: countObjects[rand(countObjects.length) - 1],
+      options: makeOptions(answer, maxNumber)
+    };
+  }
+  return { gameId, answer, options: makeOptions(answer, maxNumber) };
 }
 
 export default function App() {
@@ -91,15 +321,32 @@ export default function App() {
   const [screen, setScreen] = useState("home");
   const [activeGame, setActiveGame] = useState(null);
   const [round, setRound] = useState(null);
-  const [message, setMessage] = useState("오늘도 숫자랑 놀아볼까?");
+  const [shopCategory, setShopCategory] = useState("all");
+  const [message, setMessage] = useState("오늘도 숫자랑 같이 놀아볼까?");
 
   const equippedItems = useMemo(
-    () => items.filter((item) => Object.values(profile.equipped).includes(item.id)),
+    () => shopItems.filter((item) => Object.values(profile.equipped).includes(item.id)),
     [profile.equipped]
   );
 
+  const roomItem = useMemo(
+    () => shopItems.find((item) => item.id === profile.equipped.room) ?? shopItems[0],
+    [profile.equipped.room]
+  );
+
+  const filteredShopItems = shopItems.filter((item) => (
+    shopCategory === "all" ? true : item.type === shopCategory
+  ));
+
   function updateProfile(updater) {
-    setProfile((current) => saveState(updater(current)));
+    setProfile((current) => saveState(normalizeState(updater(current))));
+  }
+
+  function goHome() {
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    setScreen("home");
+    setActiveGame(null);
+    setRound(null);
   }
 
   function startGame(gameId) {
@@ -109,30 +356,33 @@ export default function App() {
     setRound(nextRound);
     setScreen("game");
     setMessage(`${game.title} 시작!`);
+    if (gameId === "find") {
+      window.setTimeout(() => speakNumber(nextRound.answer), 250);
+    }
     if (gameId === "memory") {
-      window.setTimeout(() => {
-        setRound((current) => (current?.gameId === "memory" ? { ...current, hidden: true } : current));
-      }, 1300);
+      setMessage("카드 위치를 기억해서 같은 숫자를 찾아봐.");
     }
   }
 
   function finishRound(correct) {
-    const reward = correct ? 8 : 3;
+    const reward = correct ? activeGame?.reward ?? 9 : 4;
     const nextMessage = correct ? praise[rand(praise.length) - 1] : "괜찮아, 다시 해보자!";
     setMessage(`${nextMessage} 코인 ${reward}개를 받았어.`);
     updateProfile((current) => {
       const playedRounds = current.progress.playedRounds + 1;
       const correctAnswers = current.progress.correctAnswers + (correct ? 1 : 0);
+      const streak = correct ? current.progress.streak + 1 : 0;
+      const bestStreak = Math.max(current.progress.bestStreak, streak);
       const maxNumber = correctAnswers >= 12 ? 10 : current.progress.maxNumber;
       return {
         ...current,
         coins: current.coins + reward,
-        progress: { maxNumber, playedRounds, correctAnswers }
+        progress: { maxNumber, playedRounds, correctAnswers, streak, bestStreak }
       };
     });
     window.setTimeout(() => {
       if (activeGame) startGame(activeGame.id);
-    }, 900);
+    }, 950);
   }
 
   function chooseNumber(value) {
@@ -156,56 +406,105 @@ export default function App() {
     setMessage(`${value} 다음은 ${value + 1}!`);
   }
 
-  function feedSnack() {
-    if (!round || round.gameId !== "feed") return;
-    const fed = round.fed + 1;
-    if (fed === round.answer) {
-      setRound({ ...round, fed });
-      finishRound(true);
+  function chooseMemory(cardId) {
+    if (!round || round.gameId !== "memory" || round.resolving) return;
+    const card = round.cards.find((candidate) => candidate.id === cardId);
+    if (!card || card.matched || round.flipped.includes(cardId)) return;
+
+    const flipped = [...round.flipped, cardId];
+    if (flipped.length === 1) {
+      setRound({ ...round, flipped });
+      setMessage("같은 숫자 카드를 찾아봐.");
       return;
     }
-    setRound({ ...round, fed });
-    setMessage(`${fed}개 줬어.`);
+
+    const [firstId, secondId] = flipped;
+    const first = round.cards.find((candidate) => candidate.id === firstId);
+    const second = round.cards.find((candidate) => candidate.id === secondId);
+
+    if (first.value === second.value) {
+      const cards = round.cards.map((candidate) =>
+        candidate.value === first.value ? { ...candidate, matched: true } : candidate
+      );
+      const allMatched = cards.every((candidate) => candidate.matched);
+      setRound({ ...round, cards, flipped: [], resolving: false });
+      setMessage(`${first.value} 짝을 찾았어!`);
+      if (allMatched) {
+        window.setTimeout(() => finishRound(true), 500);
+      }
+      return;
+    }
+
+    setRound({ ...round, flipped, resolving: true });
+    setMessage("다른 카드야. 다시 기억해보자.");
+    window.setTimeout(() => {
+      setRound((current) => (
+        current?.gameId === "memory"
+          ? { ...current, flipped: [], resolving: false }
+          : current
+      ));
+    }, 850);
   }
 
   function buyOrEquip(item) {
-    const owned = profile.unlockedItems.includes(item.id);
+    const owned = profile.inventory.includes(item.id);
     if (!owned && profile.coins < item.price) {
-      setMessage("코인이 조금 더 필요해.");
+      setMessage(`${item.name}을 사려면 코인이 더 필요해.`);
       return;
     }
     updateProfile((current) => {
-      const unlockedItems = owned ? current.unlockedItems : [...current.unlockedItems, item.id];
+      const inventory = owned ? current.inventory : [...current.inventory, item.id];
       return {
         ...current,
         coins: owned ? current.coins : current.coins - item.price,
-        unlockedItems,
-        equipped: { ...current.equipped, [item.type === "princess" ? "outfit" : item.type]: item.id }
+        inventory,
+        equipped: { ...current.equipped, [item.type]: item.id }
       };
     });
-    setMessage(owned ? `${item.name}을 입었어.` : `${item.name}을 샀어!`);
+    setMessage(owned ? `${item.name}을 장착했어.` : `${item.name}을 샀어!`);
+  }
+
+  function claimDailyReward() {
+    const today = todayKey();
+    if (profile.lastRewardDate === today) {
+      setMessage("오늘의 선물은 이미 받았어.");
+      return;
+    }
+    updateProfile((current) => ({
+      ...current,
+      coins: current.coins + 25,
+      lastRewardDate: today
+    }));
+    setMessage("오늘의 선물로 코인 25개를 받았어!");
   }
 
   return (
     <main className="app-shell">
       <header className="topbar">
-        <button className="brand-button" onClick={() => setScreen("home")} aria-label="처음으로">
+        <button className="brand-button" onClick={goHome} aria-label="처음으로">
           숫자 놀이터
         </button>
         <div className="wallet" aria-label={`코인 ${profile.coins}개`}>
-          <span>●</span>
+          <span className="coin-dot" />
           {profile.coins}
         </div>
       </header>
 
       <section className="stage">
-        <Character equippedItems={equippedItems} message={message} />
+        <Character
+          equippedItems={equippedItems}
+          message={message}
+          roomItem={roomItem}
+          coins={profile.coins}
+        />
 
         {screen === "home" && (
           <Home
-            maxNumber={profile.progress.maxNumber}
+            profile={profile}
+            games={gameCards}
             onStart={startGame}
             onShop={() => setScreen("shop")}
+            onGift={claimDailyReward}
           />
         )}
 
@@ -214,19 +513,24 @@ export default function App() {
             game={activeGame}
             round={round}
             maxNumber={profile.progress.maxNumber}
-            onBack={() => setScreen("home")}
+            onBack={goHome}
             onChoose={chooseNumber}
             onOrder={chooseOrder}
-            onFeed={feedSnack}
+            onMemory={chooseMemory}
+            onSpeak={() => round?.answer && speakNumber(round.answer)}
           />
         )}
 
         {screen === "shop" && (
           <Shop
+            items={filteredShopItems}
+            categories={shopCategories}
+            category={shopCategory}
             coins={profile.coins}
-            owned={profile.unlockedItems}
+            inventory={profile.inventory}
             equipped={profile.equipped}
-            onBack={() => setScreen("home")}
+            onCategory={setShopCategory}
+            onBack={goHome}
             onBuyOrEquip={buyOrEquip}
           />
         )}
@@ -235,66 +539,111 @@ export default function App() {
   );
 }
 
-function Character({ equippedItems, message }) {
-  const icons = equippedItems.map((item) => item.icon);
+function Character({ equippedItems, message, roomItem, coins }) {
+  const layers = [
+    { id: "base", type: "base", image: "./assets/avatar-base-generated.png", name: "기본 공주 캐릭터" },
+    ...equippedItems.filter((item) => item.type !== "room")
+  ];
+
   return (
     <aside className="character-panel">
       <div className="speech">{message}</div>
-      <div className="avatar" aria-label="꾸미기 캐릭터">
-        {icons.includes("hat-sun") && <div className="hat sun-hat" />}
-        {icons.includes("hat-crown") && <div className="hat star-crown">★</div>}
-        <div className="face">
-          <span className="eye left" />
-          <span className="eye right" />
-          <span className="smile" />
+      <div className="room-scene">
+        <img className="room-art" src={roomItem.image} alt="" aria-hidden="true" />
+        <div className="avatar" aria-label="꾸미기 캐릭터">
+          {layers.map((item) => (
+            <img
+              key={item.id}
+              src={item.avatarImage ?? item.image}
+              alt=""
+              className={`avatar-layer layer-${item.type} avatar-item-${item.id}`}
+              aria-hidden="true"
+            />
+          ))}
         </div>
-        <div className={`dress ${icons.includes("outfit-rainbow") ? "rainbow" : ""} ${icons.includes("outfit-princess") ? "princess" : ""}`}>
-          {icons.includes("wand") && <span className="avatar-wand">♡</span>}
-        </div>
+      </div>
+      <div className="mini-stats" aria-label={`현재 코인 ${coins}개`}>
+        <span>보유 코인</span>
+        <strong>{coins}</strong>
       </div>
     </aside>
   );
 }
 
-function Home({ maxNumber, onStart, onShop }) {
+function Home({ profile, games, onStart, onShop, onGift }) {
+  const unlockProgress = Math.min(100, Math.round((profile.progress.correctAnswers / 12) * 100));
+  const giftTaken = profile.lastRewardDate === todayKey();
+
   return (
     <div className="home-grid">
-      <div className="section-heading">
-        <h1>1부터 {maxNumber}까지 놀아요</h1>
-        <button className="shop-link" onClick={onShop}>상점</button>
-      </div>
-      <div className="game-grid">
-        {gameCards.map((game) => (
+      <section className="home-summary">
+        <div>
+          <p className="eyebrow">1부터 {profile.progress.maxNumber}까지</p>
+          <h1>오늘의 숫자 놀이</h1>
+        </div>
+        <div className="summary-actions">
+          <button className="gift-button" onClick={onGift} disabled={giftTaken}>
+            {giftTaken ? "선물 받음" : "오늘의 선물"}
+          </button>
+          <button className="shop-link" onClick={onShop}>상점</button>
+        </div>
+      </section>
+
+      <section className="progress-panel" aria-label="진행도">
+        <div>
+          <span>10까지 열기</span>
+          <strong>{profile.progress.correctAnswers} / 12</strong>
+        </div>
+        <div className="progress-track">
+          <span style={{ width: `${unlockProgress}%` }} />
+        </div>
+        <div className="progress-facts">
+          <span>연속 성공 {profile.progress.streak}</span>
+          <span>최고 기록 {profile.progress.bestStreak}</span>
+        </div>
+      </section>
+
+      <section className="game-grid" aria-label="게임 목록">
+        {games.map((game) => (
           <button key={game.id} className={`game-card ${game.color}`} onClick={() => onStart(game.id)}>
-            <span className="game-mark">{game.mark}</span>
-            <span>{game.title}</span>
+            <img src={game.image} alt="" aria-hidden="true" />
+            <span className="game-copy">
+              <strong>{game.title}</strong>
+              <small>{game.subtitle}</small>
+            </span>
           </button>
         ))}
-      </div>
+      </section>
     </div>
   );
 }
 
-function GameScreen({ game, round, maxNumber, onBack, onChoose, onOrder, onFeed }) {
+function GameScreen({ game, round, maxNumber, onBack, onChoose, onOrder, onMemory, onSpeak }) {
   return (
     <div className="play-panel">
       <div className="play-header">
         <button className="small-button" onClick={onBack}>처음</button>
-        <h2>{game.title}</h2>
+        <div>
+          <p className="eyebrow">코인 {game.reward}개</p>
+          <h2>{game.title}</h2>
+        </div>
       </div>
 
       {game.id === "find" && (
         <>
-          <div className="prompt-number">{round.answer}</div>
+          <div className="voice-prompt">
+            <img src="./assets/sound-wave.svg" alt="" aria-hidden="true" />
+            <button className="listen-button" onClick={onSpeak}>다시 듣기</button>
+          </div>
           <OptionGrid options={round.options} onChoose={onChoose} />
         </>
       )}
 
       {game.id === "count" && (
         <>
-          <div className="objects-row">
+          <div className="objects-row" aria-label={`${round.object.name} ${round.count}개`}>
             {Array.from({ length: round.count }, (_, index) => (
-              <span key={index} className="count-object">{snackIcons[index % snackIcons.length]}</span>
+              <img key={index} className="count-object" src={round.object.image} alt="" aria-hidden="true" />
             ))}
           </div>
           <OptionGrid options={round.options} onChoose={onChoose} />
@@ -315,21 +664,22 @@ function GameScreen({ game, round, maxNumber, onBack, onChoose, onOrder, onFeed 
         </div>
       )}
 
-      {game.id === "feed" && (
-        <div className="feed-zone">
-          <div className="feed-target">{round.answer}</div>
-          <button className="snack-button" onClick={onFeed}>{snackIcons[round.fed % snackIcons.length]}</button>
-          <div className="fed-count">{round.fed} / {round.answer}</div>
-        </div>
-      )}
-
       {game.id === "memory" && (
-        <>
-          <div className={`prompt-number ${round.hidden ? "hidden-number" : ""}`}>
-            {round.hidden ? "?" : round.answer}
-          </div>
-          <OptionGrid options={round.options} onChoose={onChoose} />
-        </>
+        <div className="memory-grid">
+          {round.cards.map((card) => {
+            const visible = card.matched || round.flipped.includes(card.id);
+            return (
+              <button
+                key={card.id}
+                className={`memory-card ${visible ? "visible" : ""} ${card.matched ? "matched" : ""}`}
+                onClick={() => onMemory(card.id)}
+                disabled={card.matched}
+              >
+                <span>{visible ? card.value : "?"}</span>
+              </button>
+            );
+          })}
+        </div>
       )}
     </div>
   );
@@ -347,31 +697,71 @@ function OptionGrid({ options, onChoose }) {
   );
 }
 
-function Shop({ coins, owned, equipped, onBack, onBuyOrEquip }) {
+function Shop({
+  items,
+  categories,
+  category,
+  coins,
+  inventory,
+  equipped,
+  onCategory,
+  onBack,
+  onBuyOrEquip
+}) {
   return (
     <div className="shop-panel">
       <div className="play-header">
         <button className="small-button" onClick={onBack}>처음</button>
-        <h2>꾸미기 상점</h2>
+        <div>
+          <p className="eyebrow">보유 코인 {coins}</p>
+          <h2>꾸미기 상점</h2>
+        </div>
       </div>
+
+      <div className="shop-tabs" role="tablist" aria-label="상점 카테고리">
+        {categories.map((tab) => (
+          <button
+            key={tab.id}
+            className={category === tab.id ? "active" : ""}
+            onClick={() => onCategory(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="shop-showcase" aria-label="새로운 상점 컬렉션">
+        <img src="./assets/shop-collection-showcase-v3.png" alt="" aria-hidden="true" />
+        <div>
+          <p className="eyebrow">새 컬렉션</p>
+          <strong>공주 옷장</strong>
+          <span>게임으로 모은 코인으로 원하는 스타일을 골라요.</span>
+        </div>
+      </div>
+
       <div className="shop-grid">
         {items.map((item) => {
-          const isOwned = owned.includes(item.id);
+          const owned = inventory.includes(item.id);
           const isEquipped = equipped[item.type] === item.id;
           return (
-            <button key={item.id} className="shop-item" onClick={() => onBuyOrEquip(item)}>
-              <ItemIcon icon={item.icon} />
-              <span>{item.name}</span>
-              <strong>{isEquipped ? "입는 중" : isOwned ? "입기" : `${item.price} 코인`}</strong>
+            <button
+              key={item.id}
+              className={`shop-item ${isEquipped ? "equipped" : ""}`}
+              onClick={() => onBuyOrEquip(item)}
+            >
+              <span className={`rarity rarity-${item.rarity}`}>{item.rarity}</span>
+              <img src={item.previewImage ?? item.image} alt="" aria-hidden="true" />
+              <span className="shop-copy">
+                <strong>{item.name}</strong>
+                <small>{item.description}</small>
+              </span>
+              <span className="shop-action">
+                {isEquipped ? "장착 중" : owned ? "장착하기" : `${item.price} 코인`}
+              </span>
             </button>
           );
         })}
       </div>
-      <p className="coin-note">가지고 있는 코인: {coins}</p>
     </div>
   );
-}
-
-function ItemIcon({ icon }) {
-  return <span className={`item-icon ${icon}`} aria-hidden="true" />;
 }
