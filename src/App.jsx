@@ -257,6 +257,15 @@ function objectParticle(word) {
   return ["일", "삼", "육", "칠", "팔", "십"].includes(word) ? "을" : "를";
 }
 
+function rarityTone(rarity) {
+  return {
+    기본: "basic",
+    고급: "fine",
+    희귀: "rare",
+    전설: "legend"
+  }[rarity] ?? "basic";
+}
+
 function getKoreanVoice() {
   const voices = window.speechSynthesis.getVoices();
   const koreanVoices = voices.filter((voice) => voice.lang?.toLowerCase().startsWith("ko"));
@@ -448,20 +457,27 @@ export default function App() {
 
   function buyOrEquip(item) {
     const owned = profile.inventory.includes(item.id);
+    const equipped = profile.equipped[item.type] === item.id;
     if (!owned && profile.coins < item.price) {
       setMessage(`${item.name}을 사려면 코인이 더 필요해.`);
       return;
     }
     updateProfile((current) => {
-      const inventory = owned ? current.inventory : [...current.inventory, item.id];
+      const currentOwned = current.inventory.includes(item.id);
+      const inventory = currentOwned ? current.inventory : [...current.inventory, item.id];
+      const isEquipped = current.equipped[item.type] === item.id;
+      const nextEquipped = {
+        ...current.equipped,
+        [item.type]: isEquipped ? null : item.id
+      };
       return {
         ...current,
-        coins: owned ? current.coins : current.coins - item.price,
+        coins: currentOwned ? current.coins : current.coins - item.price,
         inventory,
-        equipped: { ...current.equipped, [item.type]: item.id }
+        equipped: nextEquipped
       };
     });
-    setMessage(owned ? `${item.name}을 장착했어.` : `${item.name}을 샀어!`);
+    setMessage(equipped ? `${item.name}을 벗었어.` : owned ? `${item.name}을 장착했어.` : `${item.name}을 샀어!`);
   }
 
   function claimDailyReward() {
@@ -746,17 +762,17 @@ function Shop({
           return (
             <button
               key={item.id}
-              className={`shop-item ${isEquipped ? "equipped" : ""}`}
+              className={`shop-item ${owned ? "owned" : ""} ${isEquipped ? "equipped" : ""}`}
               onClick={() => onBuyOrEquip(item)}
             >
-              <span className={`rarity rarity-${item.rarity}`}>{item.rarity}</span>
+              <span className={`rarity rarity-${rarityTone(item.rarity)}`}>{item.rarity}</span>
               <img src={item.previewImage ?? item.image} alt="" aria-hidden="true" />
               <span className="shop-copy">
                 <strong>{item.name}</strong>
                 <small>{item.description}</small>
               </span>
               <span className="shop-action">
-                {isEquipped ? "장착 중" : owned ? "장착하기" : `${item.price} 코인`}
+                {isEquipped ? "해제하기" : owned ? "장착하기" : `${item.price} 코인`}
               </span>
             </button>
           );
