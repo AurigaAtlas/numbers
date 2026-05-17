@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { extraShopItems } from "./itemArt";
 
 const STORAGE_KEY = "numbers-playground-v2";
 const LEGACY_STORAGE_KEY = "numbers-playground-v1";
@@ -24,10 +25,14 @@ const defaultState = {
 
 const numberWords = ["", "일", "이", "삼", "사", "오", "육", "칠", "팔", "구", "십"];
 const countObjects = [
-  { name: "별", image: "./assets/object-star.svg" },
-  { name: "사과", image: "./assets/object-apple.svg" },
-  { name: "하트", image: "./assets/object-heart.svg" }
+  { name: "별", image: "./assets/object-star.png" },
+  { name: "사과", image: "./assets/object-apple.png" },
+  { name: "하트", image: "./assets/object-heart.png" }
 ];
+
+function raisedShopPrice(price) {
+  return price === 0 ? 0 : Math.ceil(price * 3);
+}
 
 const shopItems = [
   {
@@ -74,7 +79,7 @@ const shopItems = [
     name: "무지개 드레스",
     price: 5,
     rarity: "고급",
-    image: "./assets/outfit-rainbow.svg",
+    image: "./assets/avatar-gen-rainbow-dress.png",
     previewImage: "./assets/shop-rainbow-dress-v3.png",
     avatarImage: "./assets/avatar-gen-rainbow-dress.png",
     description: "색깔이 반짝이는 드레스"
@@ -85,7 +90,7 @@ const shopItems = [
     name: "공주 드레스",
     price: 8,
     rarity: "희귀",
-    image: "./assets/outfit-princess.svg",
+    image: "./assets/avatar-gen-princess-dress.png",
     previewImage: "./assets/shop-princess-dress-v3.png",
     avatarImage: "./assets/avatar-gen-princess-dress.png",
     description: "상점의 대표 공주 옷"
@@ -96,7 +101,7 @@ const shopItems = [
     name: "왕실 드레스",
     price: 10,
     rarity: "전설",
-    image: "./assets/outfit-royal.svg",
+    image: "./assets/avatar-gen-royal-dress.png",
     previewImage: "./assets/shop-royal-dress-v3.png",
     avatarImage: "./assets/avatar-gen-royal-dress.png",
     description: "오래 모으면 살 수 있는 특별한 옷"
@@ -107,7 +112,7 @@ const shopItems = [
     name: "햇살 모자",
     price: 3,
     rarity: "고급",
-    image: "./assets/hat-sun.svg",
+    image: "./assets/avatar-gen-sun-hat.png",
     previewImage: "./assets/shop-sun-hat-v3.png",
     avatarImage: "./assets/avatar-gen-sun-hat.png",
     description: "노란 리본이 달린 모자"
@@ -118,7 +123,7 @@ const shopItems = [
     name: "별 왕관",
     price: 6,
     rarity: "희귀",
-    image: "./assets/hat-crown.svg",
+    image: "./assets/avatar-gen-star-crown.png",
     previewImage: "./assets/shop-star-crown-v3.png",
     avatarImage: "./assets/avatar-gen-star-crown.png",
     description: "별이 달린 작은 왕관"
@@ -129,7 +134,7 @@ const shopItems = [
     name: "꽃 티아라",
     price: 8,
     rarity: "희귀",
-    image: "./assets/hat-tiara.svg",
+    image: "./assets/avatar-gen-flower-tiara.png",
     previewImage: "./assets/shop-flower-tiara-v3.png",
     avatarImage: "./assets/avatar-gen-flower-tiara.png",
     description: "꽃잎 장식 머리띠"
@@ -140,7 +145,7 @@ const shopItems = [
     name: "하트 요술봉",
     price: 5,
     rarity: "고급",
-    image: "./assets/acc-wand.svg",
+    image: "./assets/avatar-gen-heart-wand.png",
     previewImage: "./assets/gen-heart-wand.png",
     avatarImage: "./assets/avatar-gen-heart-wand.png",
     description: "정답을 응원하는 요술봉"
@@ -151,12 +156,16 @@ const shopItems = [
     name: "나비 날개",
     price: 10,
     rarity: "전설",
-    image: "./assets/acc-wings.svg",
+    image: "./assets/avatar-gen-butterfly-wings.png",
     previewImage: "./assets/shop-butterfly-wings-v3.png",
     avatarImage: "./assets/avatar-gen-butterfly-wings.png",
     description: "캐릭터 뒤에 달리는 날개"
-  }
-];
+  },
+  ...extraShopItems
+].map((item) => ({
+  ...item,
+  price: raisedShopPrice(item.price)
+}));
 
 const shopCategories = [
   { id: "all", label: "전체" },
@@ -171,7 +180,7 @@ const gameCards = [
     id: "find",
     title: "숫자 찾기",
     subtitle: "목소리를 듣고 숫자를 골라요",
-    image: "./assets/game-find.svg",
+    image: "./assets/game-find.png",
     color: "coral",
     reward: 9
   },
@@ -179,7 +188,7 @@ const gameCards = [
     id: "count",
     title: "몇 개일까",
     subtitle: "그림을 세고 숫자를 눌러요",
-    image: "./assets/game-count.svg",
+    image: "./assets/game-count.png",
     color: "mint",
     reward: 9
   },
@@ -187,7 +196,7 @@ const gameCards = [
     id: "order",
     title: "차례차례",
     subtitle: "1부터 순서대로 눌러요",
-    image: "./assets/game-order.svg",
+    image: "./assets/game-order.png",
     color: "sky",
     reward: 10
   },
@@ -195,13 +204,32 @@ const gameCards = [
     id: "memory",
     title: "카드 기억하기",
     subtitle: "같은 숫자 카드를 찾아요",
-    image: "./assets/game-memory.svg",
+    image: "./assets/game-memory.png",
     color: "lilac",
     reward: 16
   }
 ];
 
 const praise = ["잘했어!", "멋져!", "좋았어!", "정말 정확해!", "연속 성공!"];
+
+const celebrationBursts = [
+  { x: -184, y: -94, r: -18, d: 0 },
+  { x: -136, y: -154, r: 21, d: 40 },
+  { x: -74, y: -178, r: -34, d: 80 },
+  { x: -18, y: -132, r: 19, d: 20 },
+  { x: 48, y: -178, r: 35, d: 70 },
+  { x: 126, y: -146, r: -24, d: 30 },
+  { x: 188, y: -86, r: 18, d: 90 },
+  { x: -206, y: -18, r: 28, d: 110 },
+  { x: -142, y: 42, r: -28, d: 60 },
+  { x: -64, y: 88, r: 25, d: 130 },
+  { x: 30, y: 92, r: -18, d: 100 },
+  { x: 112, y: 44, r: 32, d: 50 },
+  { x: 204, y: -8, r: -32, d: 120 },
+  { x: -94, y: -40, r: 12, d: 10 },
+  { x: 84, y: -54, r: -14, d: 140 },
+  { x: 154, y: 98, r: 26, d: 150 }
+];
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -331,6 +359,7 @@ export default function App() {
   const [activeGame, setActiveGame] = useState(null);
   const [round, setRound] = useState(null);
   const [shopCategory, setShopCategory] = useState("all");
+  const [celebration, setCelebration] = useState(null);
   const [message, setMessage] = useState("오늘도 숫자랑 같이 놀아볼까?");
 
   const equippedItems = useMemo(
@@ -373,9 +402,22 @@ export default function App() {
     }
   }
 
+  function triggerCelebration(reward) {
+    const id = Date.now();
+    setCelebration({ id, reward });
+    window.setTimeout(() => {
+      setCelebration((current) => (current?.id === id ? null : current));
+    }, 1150);
+  }
+
   function finishRound(correct) {
     const reward = correct ? activeGame?.reward ?? 9 : 4;
     const nextMessage = correct ? praise[rand(praise.length) - 1] : "괜찮아, 다시 해보자!";
+    if (correct) {
+      triggerCelebration(reward);
+    } else {
+      setCelebration(null);
+    }
     setMessage(`${nextMessage} 코인 ${reward}개를 받았어.`);
     updateProfile((current) => {
       const playedRounds = current.progress.playedRounds + 1;
@@ -459,7 +501,10 @@ export default function App() {
     const owned = profile.inventory.includes(item.id);
     const equipped = profile.equipped[item.type] === item.id;
     if (!owned && profile.coins < item.price) {
-      setMessage(`${item.name}을 사려면 코인이 더 필요해.`);
+      const shortage = item.price - profile.coins;
+      const notice = `${item.name}을 사려면 코인이 ${shortage}개 더 필요해.`;
+      setMessage(notice);
+      window.alert(notice);
       return;
     }
     updateProfile((current) => {
@@ -494,24 +539,48 @@ export default function App() {
     setMessage("오늘의 선물로 코인 25개를 받았어!");
   }
 
+  function resetData() {
+    const confirmed = window.confirm("코인, 아이템, 진행도를 처음 상태로 되돌릴까요?");
+    if (!confirmed) return;
+    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    const resetProfile = normalizeState({});
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    saveState(resetProfile);
+    setProfile(resetProfile);
+    setScreen("home");
+    setActiveGame(null);
+    setRound(null);
+    setShopCategory("all");
+    setCelebration(null);
+    setMessage("저장된 데이터를 처음 상태로 돌렸어.");
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
         <button className="brand-button" onClick={goHome} aria-label="처음으로">
           숫자 놀이터
         </button>
-        <div className="wallet" aria-label={`코인 ${profile.coins}개`}>
-          <span className="coin-dot" />
-          {profile.coins}
+        <div className="top-actions">
+          <button className="reset-button" onClick={resetData}>
+            초기화
+          </button>
+          <div className="wallet" aria-label={`코인 ${profile.coins}개`}>
+            <span className="coin-dot" />
+            {profile.coins}
+          </div>
         </div>
       </header>
 
-      <section className="stage">
+      {celebration && <Celebration key={celebration.id} reward={celebration.reward} />}
+
+      <section className={`stage stage-${screen}`}>
         <Character
           equippedItems={equippedItems}
           message={message}
           roomItem={roomItem}
           coins={profile.coins}
+          celebrating={Boolean(celebration)}
         />
 
         {screen === "home" && (
@@ -555,7 +624,30 @@ export default function App() {
   );
 }
 
-function Character({ equippedItems, message, roomItem, coins }) {
+function Celebration({ reward }) {
+  return (
+    <div className="celebration-layer" aria-hidden="true">
+      <div className="celebration-pop">
+        <span>정답!</span>
+        <strong>+{reward}</strong>
+      </div>
+      {celebrationBursts.map((burst, index) => (
+        <span
+          key={index}
+          className={`celebration-spark spark-${index % 4}`}
+          style={{
+            "--spark-x": `${burst.x}px`,
+            "--spark-y": `${burst.y}px`,
+            "--spark-rotate": `${burst.r}deg`,
+            "--spark-delay": `${burst.d}ms`
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Character({ equippedItems, message, roomItem, coins, celebrating }) {
   const layers = [
     { id: "base", type: "base", image: "./assets/avatar-base-generated.png", name: "기본 공주 캐릭터" },
     ...equippedItems.filter((item) => item.type !== "room")
@@ -564,9 +656,9 @@ function Character({ equippedItems, message, roomItem, coins }) {
   return (
     <aside className="character-panel">
       <div className="speech">{message}</div>
-      <div className="room-scene">
+      <div className={`room-scene ${celebrating ? "is-celebrating" : ""}`}>
         <img className="room-art" src={roomItem.image} alt="" aria-hidden="true" />
-        <div className="avatar" aria-label="꾸미기 캐릭터">
+        <div className={`avatar ${celebrating ? "avatar-celebrate" : ""}`} aria-label="꾸미기 캐릭터">
           {layers.map((item) => (
             <img
               key={item.id}
@@ -648,7 +740,7 @@ function GameScreen({ game, round, maxNumber, onBack, onChoose, onOrder, onMemor
       {game.id === "find" && (
         <>
           <div className="voice-prompt">
-            <img src="./assets/sound-wave.svg" alt="" aria-hidden="true" />
+            <img src="./assets/sound-wave.png" alt="" aria-hidden="true" />
             <button className="listen-button" onClick={onSpeak}>다시 듣기</button>
           </div>
           <OptionGrid options={round.options} onChoose={onChoose} />
@@ -766,7 +858,12 @@ function Shop({
               onClick={() => onBuyOrEquip(item)}
             >
               <span className={`rarity rarity-${rarityTone(item.rarity)}`}>{item.rarity}</span>
-              <img src={item.previewImage ?? item.image} alt="" aria-hidden="true" />
+              <img
+                className={`shop-preview preview-${item.type}`}
+                src={item.previewImage ?? item.image}
+                alt=""
+                aria-hidden="true"
+              />
               <span className="shop-copy">
                 <strong>{item.name}</strong>
                 <small>{item.description}</small>
