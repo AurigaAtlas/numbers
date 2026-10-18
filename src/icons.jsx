@@ -236,3 +236,60 @@ export function BalloonArt() {
     </svg>
   );
 }
+
+const artFont = { fontFamily: "Jua, 'Apple SD Gothic Neo', sans-serif" };
+
+export function HListenArt() {
+  return (
+    <svg className="game-svg" viewBox="0 0 100 100" aria-hidden="true">
+      <rect x="34" y="20" width="56" height="60" rx="16" fill="#ff7e67" />
+      <rect x="34" y="20" width="56" height="54" rx="16" fill="#ff9a86" />
+      <text x="62" y="62" textAnchor="middle" fontSize="40" fill="#fff" style={artFont}>ㄱ</text>
+      <path d="M22 38 q-8 12 0 24" stroke="#9b7bff" strokeWidth="5" fill="none" strokeLinecap="round" />
+      <path d="M12 30 q-14 20 0 40" stroke="#c7b6ff" strokeWidth="5" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function HPictureArt() {
+  return (
+    <svg className="game-svg" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="34" cy="44" r="22" fill="#ff5c7a" />
+      <path d="M34 24 q2 -10 10 -12" stroke="#1f9658" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <ellipse cx="27" cy="36" rx="6" ry="4" fill="#fff" opacity="0.6" />
+      <rect x="52" y="48" width="40" height="40" rx="12" fill="#36bf77" />
+      <text x="72" y="78" textAnchor="middle" fontSize="28" fill="#fff" style={artFont}>사</text>
+    </svg>
+  );
+}
+
+export function HBuildArt() {
+  return (
+    <svg className="game-svg" viewBox="0 0 100 100" aria-hidden="true">
+      <rect x="4" y="14" width="34" height="34" rx="10" fill="#3d8bff" />
+      <text x="21" y="40" textAnchor="middle" fontSize="24" fill="#fff" style={artFont}>ㄴ</text>
+      <rect x="62" y="14" width="34" height="34" rx="10" fill="#ffc62e" />
+      <text x="79" y="40" textAnchor="middle" fontSize="24" fill="#fff" style={artFont}>ㅏ</text>
+      <path d="M40 31 h20" stroke="#6e6a8e" strokeWidth="5" strokeLinecap="round" />
+      <path d="M50 21 v20" stroke="#6e6a8e" strokeWidth="5" strokeLinecap="round" />
+      <rect x="28" y="56" width="44" height="40" rx="12" fill="#ff6f9f" />
+      <text x="50" y="86" textAnchor="middle" fontSize="28" fill="#fff" style={artFont}>나</text>
+    </svg>
+  );
+}
+
+export function HTraceArt() {
+  return (
+    <svg className="game-svg" viewBox="0 0 100 100" aria-hidden="true">
+      <rect x="8" y="10" width="70" height="80" rx="14" fill="#fff" stroke="#d8cdfb" strokeWidth="4" />
+      <text x="43" y="70" textAnchor="middle" fontSize="54" fill="#ece6ff" stroke="#b49cff" strokeWidth="1.5" strokeDasharray="3 3" style={artFont}>ㄱ</text>
+      <path d="M24 30 H56 V62" stroke="#9b7bff" strokeWidth="7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <g transform="rotate(35 74 66)">
+        <rect x="66" y="38" width="16" height="44" rx="4" fill="#ffc62e" />
+        <rect x="66" y="38" width="16" height="10" rx="4" fill="#ff8fb8" />
+        <path d="M66 82 L74 96 L82 82Z" fill="#f6d7a7" />
+        <path d="M71.5 91 L74 96 L76.5 91Z" fill="#5b4a7a" />
+      </g>
+    </svg>
+  );
+}

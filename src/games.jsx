@@ -1,13 +1,7 @@
 import { BackIcon, CheckIcon, CoinIcon, SpeakerIcon, StarShape } from "./icons";
+import { VoiceStage, tileState } from "./gameParts";
+import { HangulBuild, HangulListen, HangulPicture, HangulTrace } from "./hangulGames";
 import { toneClass } from "./rounds";
-
-function tileState(value, round, answer) {
-  const feedback = round.feedback;
-  if (!feedback) return "";
-  if (value === feedback.picked) return feedback.correct ? "is-correct" : "is-wrong";
-  if (!feedback.correct && value === answer) return "is-answer";
-  return "is-dim";
-}
 
 export function GameScreen({
   game,
@@ -21,7 +15,8 @@ export function GameScreen({
   onCountTap,
   onOrder,
   onMemory,
-  onBalloon
+  onBalloon,
+  onTraced
 }) {
   return (
     <div className={`play-panel play-${game.color}`}>
@@ -37,7 +32,7 @@ export function GameScreen({
             <span className="eyebrow-text">{game.subtitle}</span>
           </p>
         </div>
-        {onSpeak && game.id !== "find" && (
+        {onSpeak && game.id !== "find" && game.id !== "h-listen" && (
           <button
             className={`icon-button listen-mini ${speaking ? "is-speaking" : ""}`}
             onClick={onSpeak}
@@ -58,6 +53,10 @@ export function GameScreen({
         {game.id === "missing" && <MissingGame round={round} onAnswer={onAnswer} />}
         {game.id === "add" && <AddGame round={round} onAnswer={onAnswer} />}
         {game.id === "balloon" && <BalloonGame round={round} onBalloon={onBalloon} />}
+        {game.id === "h-listen" && <HangulListen round={round} speaking={speaking} onSpeak={onSpeak} onAnswer={onAnswer} />}
+        {game.id === "h-picture" && <HangulPicture round={round} onAnswer={onAnswer} />}
+        {game.id === "h-build" && <HangulBuild round={round} onAnswer={onAnswer} />}
+        {game.id === "h-trace" && <HangulTrace round={round} onTraced={onTraced} />}
       </div>
     </div>
   );
@@ -83,21 +82,7 @@ function OptionGrid({ round, onAnswer }) {
 function FindGame({ round, speaking, onSpeak, onAnswer }) {
   return (
     <>
-      <div className={`voice-stage ${speaking ? "is-speaking" : ""}`}>
-        <button className="speaker-button" onClick={onSpeak} aria-label="다시 듣기">
-          <span className="speaker-ring ring-1" />
-          <span className="speaker-ring ring-2" />
-          <span className="speaker-ring ring-3" />
-          <span className="speaker-core"><SpeakerIcon /></span>
-        </button>
-        <div className="voice-copy">
-          <div className="eq" aria-hidden="true">
-            {Array.from({ length: 7 }, (_, index) => <i key={index} style={{ "--i": index }} />)}
-          </div>
-          <strong>잘 듣고 숫자를 찾아요</strong>
-          <span>스피커를 누르면 다시 들려줘요</span>
-        </div>
-      </div>
+      <VoiceStage speaking={speaking} onSpeak={onSpeak} title="잘 듣고 숫자를 찾아요" />
       <OptionGrid round={round} onAnswer={onAnswer} />
     </>
   );
