@@ -88,12 +88,13 @@ function FindGame({ round, speaking, onSpeak, onAnswer }) {
   );
 }
 
-function ObjectPile({ count, object, className = "", counted, onTap, leaving = 0 }) {
+function ObjectPile({ count, object, className = "", counted, onTap, leaving = 0, numberFrom = 0 }) {
   return (
     <div className={`object-pile ${className} ${count > 10 ? "is-crowded" : ""}`}>
       {Array.from({ length: count }, (_, index) => {
-        const order = counted ? counted.indexOf(index) + 1 : 0;
         const isLeaving = index >= count - leaving;
+        // numberFrom > 0 labels every staying object (used as the counting hint).
+        const order = numberFrom && !isLeaving ? numberFrom + index : counted ? counted.indexOf(index) + 1 : 0;
         const Tag = onTap ? "button" : "span";
         return (
           <Tag
@@ -154,7 +155,7 @@ function OrderGame({ round, onOrder }) {
         {round.options.map((value, index) => (
           <button
             key={value}
-            className={`number-tile ${toneClass(value)} ${round.selected.includes(value) ? "selected" : ""} ${tileState(value, round, round.next)}`}
+            className={`number-tile ${toneClass(value)} ${round.selected.includes(value) ? "selected" : ""} ${round.lastWrong === value && !round.feedback ? "is-wrong-try" : ""} ${tileState(value, round, round.next)}`}
             style={{ "--i": index }}
             onClick={() => onOrder(value)}
           >
@@ -235,6 +236,7 @@ function MissingGame({ round, onAnswer }) {
       <div className="sequence-row" style={{ "--len": round.sequence.length }}>
         {round.sequence.map((value, index) => {
           const isBlank = index === round.blank;
+          const step = round.sequence[1] - round.sequence[0];
           return (
             <span
               key={index}
@@ -242,6 +244,9 @@ function MissingGame({ round, onAnswer }) {
               style={{ "--i": index }}
             >
               {isBlank && !filled ? "?" : value}
+              {round.hint && index > 0 && (
+                <i className="step-hint" style={{ "--i": index }}>{step > 0 ? `+${step}` : step}</i>
+              )}
             </span>
           );
         })}
@@ -257,12 +262,12 @@ function AddGame({ round, onAnswer }) {
     <>
       <div className={`math-stage ${minus ? "is-minus" : ""}`}>
         {minus ? (
-          <ObjectPile count={round.a} object={round.object} className="math-pile" leaving={round.b} />
+          <ObjectPile count={round.a} object={round.object} className="math-pile" leaving={round.b} numberFrom={round.hint ? 1 : 0} />
         ) : (
           <>
-            <ObjectPile count={round.a} object={round.object} className="math-pile" />
+            <ObjectPile count={round.a} object={round.object} className="math-pile" numberFrom={round.hint ? 1 : 0} />
             <span className="math-op">+</span>
-            <ObjectPile count={round.b} object={round.object} className="math-pile pile-b" />
+            <ObjectPile count={round.b} object={round.object} className="math-pile pile-b" numberFrom={round.hint ? round.a + 1 : 0} />
           </>
         )}
       </div>

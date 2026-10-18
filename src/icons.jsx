@@ -293,3 +293,33 @@ export function HTraceArt() {
     </svg>
   );
 }
+
+export function BookIcon() {
+  return (
+    <svg {...base} strokeWidth="2.2">
+      <path d="M12 6.5C10 5 6.5 4.5 3.5 5v13c3-.5 6.5 0 8.5 1.5 2-1.5 5.5-2 8.5-1.5V5c-3-.5-6.5 0-8.5 1.5z" fill="currentColor" fillOpacity="0.25" />
+      <path d="M12 6.5v13" />
+    </svg>
+  );
+}
+
+export function ChestIcon({ open = false }) {
+  return (
+    <svg className="chest-icon" viewBox="0 0 64 56" aria-hidden="true">
+      <rect x="6" y="24" width="52" height="28" rx="6" fill="#c9773d" stroke="#7a3f12" strokeWidth="3" />
+      <rect x="6" y="34" width="52" height="5" fill="#f7c948" />
+      <rect x="27" y="28" width="10" height="13" rx="3" fill="#f7c948" stroke="#b07a10" strokeWidth="2" />
+      {open ? (
+        <>
+          <ellipse cx="32" cy="24" rx="24" ry="8" fill="#ffe27a" />
+          <circle cx="24" cy="21" r="4" fill="#ffc62e" stroke="#e5a100" strokeWidth="1.5" />
+          <circle cx="36" cy="19" r="4" fill="#ffc62e" stroke="#e5a100" strokeWidth="1.5" />
+          <circle cx="30" cy="24" r="4" fill="#ffc62e" stroke="#e5a100" strokeWidth="1.5" />
+          <path d="M8 22 L14 4 L56 4 L58 22Z" fill="#b0652a" stroke="#7a3f12" strokeWidth="3" strokeLinejoin="round" />
+        </>
+      ) : (
+        <path className="chest-lid" d="M6 26 Q6 8 32 8 Q58 8 58 26Z" fill="#b0652a" stroke="#7a3f12" strokeWidth="3" strokeLinejoin="round" />
+      )}
+    </svg>
+  );
+}
