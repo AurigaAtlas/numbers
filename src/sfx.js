@@ -57,6 +57,11 @@ export const sfx = {
     tone(988, { duration: 0.07, type: "square", gain: 0.035 });
     tone(1319, { at: 0.06, duration: 0.16, type: "square", gain: 0.035 });
   },
+  levelUp() {
+    [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.5].forEach((frequency, index) => {
+      tone(frequency, { at: index * 0.11, duration: index === 6 ? 0.5 : 0.2, type: "triangle", gain: 0.15 });
+    });
+  },
   buy() {
     [784, 988, 1175, 1568].forEach((frequency, index) => {
       tone(frequency, { at: index * 0.07, duration: 0.18, type: "triangle", gain: 0.13 });
