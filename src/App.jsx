@@ -1,29 +1,36 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { extraShopItems } from "./itemArt";
-import { sfx } from "./sfx";
-import { bump, centerOf, flyCoins, prefersReducedMotion, viewportCenter } from "./motion";
+import { gameCards, levels, praise, shopCategories, shopItems } from "./data";
+import { GameScreen } from "./games";
 import {
-  BackIcon,
   BagIcon,
+  BalloonArt,
   CheckIcon,
   CloudShape,
   CoinIcon,
+  CompareArt,
   FlameIcon,
+  GearIcon,
   GiftIcon,
   HeartShape,
   LockIcon,
+  MathArt,
+  MissingArt,
   PlayIcon,
-  ResetIcon,
   SoundOffIcon,
   SpeakerIcon,
   StarShape,
   TrophyIcon
 } from "./icons";
+import { bump, centerOf, flyCoins, prefersReducedMotion, viewportCenter } from "./motion";
+import { LevelUpOverlay, SettingsSheet } from "./overlays";
+import { countingWord, josa, makeRound, numberJosa, sinoWord } from "./rounds";
+import { sfx } from "./sfx";
+import { speak, stopSpeaking } from "./voice";
 
 const STORAGE_KEY = "numbers-playground-v2";
 const LEGACY_STORAGE_KEY = "numbers-playground-v1";
-const SOUND_KEY = "numbers-playground-sound";
-const UNLOCK_GOAL = 12;
+const SETTINGS_KEY = "numbers-playground-settings";
+const LEGACY_SOUND_KEY = "numbers-playground-sound";
 
 const defaultState = {
   coins: 30,
@@ -35,7 +42,9 @@ const defaultState = {
     room: "room-sky"
   },
   progress: {
-    maxNumber: 5,
+    level: 1,
+    playLevel: 1,
+    levelStars: 0,
     playedRounds: 0,
     correctAnswers: 0,
     streak: 0,
@@ -44,203 +53,36 @@ const defaultState = {
   lastRewardDate: null
 };
 
-const numberWords = ["", "일", "이", "삼", "사", "오", "육", "칠", "팔", "구", "십"];
-const countingWords = ["", "하나", "둘", "셋", "넷", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
-const countObjects = [
-  { name: "별", image: "./assets/object-star.png" },
-  { name: "사과", image: "./assets/object-apple.png" },
-  { name: "하트", image: "./assets/object-heart.png" }
-];
+const defaultSettings = {
+  sound: true,
+  voiceURI: null,
+  rate: "normal",
+  praiseVoice: true
+};
 
-function raisedShopPrice(price) {
-  return price === 0 ? 0 : Math.ceil(price * 3);
-}
-
-const shopItems = [
-  {
-    id: "room-sky",
-    type: "room",
-    name: "공주 놀이방",
-    price: 0,
-    rarity: "기본",
-    image: "./assets/generated-princess-room.png",
-    description: "새로 만든 따뜻한 공주방"
-  },
-  {
-    id: "room-castle",
-    type: "room",
-    name: "성 안뜰",
-    price: 10,
-    rarity: "희귀",
-    image: "./assets/generated-castle-courtyard.png",
-    description: "새로 만든 햇살 가득한 성 안뜰"
-  },
-  {
-    id: "room-garden",
-    type: "room",
-    name: "꽃 정원",
-    price: 7,
-    rarity: "고급",
-    image: "./assets/generated-flower-garden.png",
-    description: "새로 만든 꽃과 정자 배경"
-  },
-  {
-    id: "base-outfit",
-    type: "outfit",
-    name: "분홍 원피스",
-    price: 0,
-    rarity: "기본",
-    image: "./assets/avatar-gen-pink-dress.png",
-    previewImage: "./assets/shop-pink-dress-generated.png",
-    avatarImage: "./assets/avatar-gen-pink-dress.png",
-    description: "캐릭터 몸에 맞춰 만든 기본 드레스"
-  },
-  {
-    id: "rainbow-outfit",
-    type: "outfit",
-    name: "무지개 드레스",
-    price: 5,
-    rarity: "고급",
-    image: "./assets/avatar-gen-rainbow-dress.png",
-    previewImage: "./assets/shop-rainbow-dress-v3.png",
-    avatarImage: "./assets/avatar-gen-rainbow-dress.png",
-    description: "색깔이 반짝이는 드레스"
-  },
-  {
-    id: "princess-dress",
-    type: "outfit",
-    name: "공주 드레스",
-    price: 8,
-    rarity: "희귀",
-    image: "./assets/avatar-gen-princess-dress.png",
-    previewImage: "./assets/shop-princess-dress-v3.png",
-    avatarImage: "./assets/avatar-gen-princess-dress.png",
-    description: "상점의 대표 공주 옷"
-  },
-  {
-    id: "royal-dress",
-    type: "outfit",
-    name: "왕실 드레스",
-    price: 10,
-    rarity: "전설",
-    image: "./assets/avatar-gen-royal-dress.png",
-    previewImage: "./assets/shop-royal-dress-v3.png",
-    avatarImage: "./assets/avatar-gen-royal-dress.png",
-    description: "오래 모으면 살 수 있는 특별한 옷"
-  },
-  {
-    id: "sun-hat",
-    type: "hat",
-    name: "햇살 모자",
-    price: 3,
-    rarity: "고급",
-    image: "./assets/avatar-gen-sun-hat.png",
-    previewImage: "./assets/shop-sun-hat-v3.png",
-    avatarImage: "./assets/avatar-gen-sun-hat.png",
-    description: "노란 리본이 달린 모자"
-  },
-  {
-    id: "star-crown",
-    type: "hat",
-    name: "별 왕관",
-    price: 6,
-    rarity: "희귀",
-    image: "./assets/avatar-gen-star-crown.png",
-    previewImage: "./assets/shop-star-crown-v3.png",
-    avatarImage: "./assets/avatar-gen-star-crown.png",
-    description: "별이 달린 작은 왕관"
-  },
-  {
-    id: "flower-tiara",
-    type: "hat",
-    name: "꽃 티아라",
-    price: 8,
-    rarity: "희귀",
-    image: "./assets/avatar-gen-flower-tiara.png",
-    previewImage: "./assets/shop-flower-tiara-v3.png",
-    avatarImage: "./assets/avatar-gen-flower-tiara.png",
-    description: "꽃잎 장식 머리띠"
-  },
-  {
-    id: "heart-wand",
-    type: "accessory",
-    name: "하트 요술봉",
-    price: 5,
-    rarity: "고급",
-    image: "./assets/avatar-gen-heart-wand.png",
-    previewImage: "./assets/gen-heart-wand.png",
-    avatarImage: "./assets/avatar-gen-heart-wand.png",
-    description: "정답을 응원하는 요술봉"
-  },
-  {
-    id: "butterfly-wings",
-    type: "accessory",
-    name: "나비 날개",
-    price: 10,
-    rarity: "전설",
-    image: "./assets/avatar-gen-butterfly-wings.png",
-    previewImage: "./assets/shop-butterfly-wings-v3.png",
-    avatarImage: "./assets/avatar-gen-butterfly-wings.png",
-    description: "캐릭터 뒤에 달리는 날개"
-  },
-  ...extraShopItems.filter(Boolean)
-].map((item) => ({
-  ...item,
-  price: raisedShopPrice(item.price)
-}));
-
-const shopCategories = [
-  { id: "all", label: "전체" },
-  { id: "outfit", label: "옷" },
-  { id: "hat", label: "모자" },
-  { id: "accessory", label: "소품" },
-  { id: "room", label: "방" }
-];
-
-const gameCards = [
-  {
-    id: "find",
-    title: "숫자 찾기",
-    subtitle: "목소리를 듣고 숫자를 골라요",
-    intro: "잘 듣고 맞는 숫자를 눌러봐!",
-    image: "./assets/game-find.png",
-    color: "coral",
-    reward: 9
-  },
-  {
-    id: "count",
-    title: "몇 개일까",
-    subtitle: "그림을 세고 숫자를 눌러요",
-    intro: "그림을 하나씩 눌러서 세어봐!",
-    image: "./assets/game-count.png",
-    color: "mint",
-    reward: 9
-  },
-  {
-    id: "order",
-    title: "차례차례",
-    subtitle: "1부터 순서대로 눌러요",
-    intro: "1부터 차례대로 눌러봐!",
-    image: "./assets/game-order.png",
-    color: "sky",
-    reward: 10
-  },
-  {
-    id: "memory",
-    title: "카드 기억하기",
-    subtitle: "같은 숫자 카드를 찾아요",
-    intro: "카드를 뒤집어서 같은 숫자 짝을 찾아봐!",
-    image: "./assets/game-memory.png",
-    color: "lilac",
-    reward: 16
-  }
-];
-
-const praise = ["잘했어!", "멋져!", "좋았어!", "정말 정확해!", "최고야!"];
 const confettiColors = ["#FF5C7A", "#FFC62E", "#3CC47C", "#3D8BFF", "#A07CFF", "#FF8A3D", "#22B8CF"];
+const gameArt = { compare: CompareArt, missing: MissingArt, math: MathArt, balloon: BalloonArt };
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizeProgress(raw) {
+  const progress = { ...defaultState.progress, ...raw };
+  if (raw && raw.level === undefined) {
+    // Profiles from before levels existed: "10까지 열림" becomes level 2.
+    const level = (raw.maxNumber ?? 5) >= 10 ? 2 : 1;
+    progress.level = level;
+    progress.playLevel = level;
+    progress.levelStars = level === 1 ? Math.min(raw.correctAnswers ?? 0, levels[0].goal - 1) : 0;
+  }
+  progress.level = clamp(progress.level, 1, levels.length);
+  progress.playLevel = clamp(progress.playLevel, 1, progress.level);
+  return progress;
 }
 
 function normalizeState(rawState) {
@@ -254,20 +96,17 @@ function normalizeState(rawState) {
       ...defaultState.equipped,
       ...rawState?.equipped
     },
-    progress: {
-      ...defaultState.progress,
-      ...rawState?.progress
-    }
+    progress: normalizeProgress(rawState?.progress)
   };
 }
 
 function loadState() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (!stored) return defaultState;
+    if (!stored) return normalizeState({});
     return normalizeState(JSON.parse(stored));
   } catch {
-    return defaultState;
+    return normalizeState({});
   }
 }
 
@@ -280,37 +119,14 @@ function saveState(next) {
   return next;
 }
 
-function loadSoundPreference() {
+function loadSettings() {
   try {
-    return localStorage.getItem(SOUND_KEY) !== "off";
+    const stored = localStorage.getItem(SETTINGS_KEY);
+    if (stored) return { ...defaultSettings, ...JSON.parse(stored) };
+    return { ...defaultSettings, sound: localStorage.getItem(LEGACY_SOUND_KEY) !== "off" };
   } catch {
-    return true;
+    return defaultSettings;
   }
-}
-
-function rand(max) {
-  return Math.floor(Math.random() * max) + 1;
-}
-
-function shuffle(values) {
-  const copy = [...values];
-  for (let index = copy.length - 1; index > 0; index -= 1) {
-    const swap = Math.floor(Math.random() * (index + 1));
-    [copy[index], copy[swap]] = [copy[swap], copy[index]];
-  }
-  return copy;
-}
-
-function makeOptions(answer, maxNumber) {
-  const pool = Array.from({ length: maxNumber }, (_, index) => index + 1).filter((n) => n !== answer);
-  return shuffle([answer, ...shuffle(pool).slice(0, 3)]);
-}
-
-// Picks 을/를 (or 이/가 etc.) from whether the last Hangul syllable has a final consonant.
-function josa(word, withFinal, withoutFinal) {
-  const code = word.charCodeAt(word.length - 1) - 0xac00;
-  const hasFinal = code >= 0 && code <= 11171 && code % 28 !== 0;
-  return `${word}${hasFinal ? withFinal : withoutFinal}`;
 }
 
 function rarityTone(rarity) {
@@ -322,71 +138,38 @@ function rarityTone(rarity) {
   }[rarity] ?? "basic";
 }
 
-function getKoreanVoice() {
-  const voices = window.speechSynthesis.getVoices();
-  const koreanVoices = voices.filter((voice) => voice.lang?.toLowerCase().startsWith("ko"));
-  const preferredNames = ["Yuna", "Google", "Microsoft", "Heami", "Yuri", "한국", "Korean"];
-  return (
-    preferredNames
-      .map((name) => koreanVoices.find((voice) => voice.name.includes(name)))
-      .find(Boolean) ??
-    koreanVoices[0] ??
-    null
-  );
+function randomPraise() {
+  return praise[Math.floor(Math.random() * praise.length)];
 }
 
-function speak(text, { rate = 0.88, onStart, onEnd } = {}) {
-  if (!("speechSynthesis" in window)) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "ko-KR";
-  utterance.voice = getKoreanVoice();
-  utterance.rate = rate;
-  utterance.pitch = 1.04;
-  utterance.volume = 1;
-  utterance.onstart = () => onStart?.();
-  utterance.onend = () => onEnd?.();
-  utterance.onerror = () => onEnd?.();
-  window.speechSynthesis.speak(utterance);
+// What the voice says when a round starts (and on "다시 듣기").
+function promptFor(round) {
+  switch (round.gameId) {
+    case "find":
+      return `${josa(sinoWord(round.answer), "을", "를")} 찾아주세요.`;
+    case "count":
+      return "몇 개인지 세어볼까요?";
+    case "order":
+      return `${sinoWord(round.sequence[0])}부터 차례대로 눌러주세요.`;
+    case "compare":
+      if (round.showNumerals) return round.ask === "more" ? "더 큰 숫자를 골라주세요." : "더 작은 숫자를 골라주세요.";
+      return round.ask === "more" ? "더 많은 쪽을 골라주세요." : "더 적은 쪽을 골라주세요.";
+    case "missing":
+      return "빈칸에 들어갈 숫자는 뭘까요?";
+    case "add":
+      return `${sinoWord(round.a)} ${round.op === "+" ? "더하기" : "빼기"} ${josa(sinoWord(round.b), "은", "는")} 얼마일까요?`;
+    case "balloon":
+      return `${sinoWord(round.target)} 풍선을 터뜨려주세요.`;
+    default:
+      return null;
+  }
 }
 
-function stopSpeaking() {
-  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-}
-
-function makeRound(gameId, maxNumber) {
-  const answer = rand(maxNumber);
-  const base = { id: `${Date.now()}-${Math.random()}`, gameId, feedback: null };
-  if (gameId === "order") {
-    return {
-      ...base,
-      answer: maxNumber,
-      selected: [],
-      next: 1,
-      options: shuffle(Array.from({ length: maxNumber }, (_, index) => index + 1))
-    };
-  }
-  if (gameId === "memory") {
-    const pairCount = Math.min(maxNumber, 4);
-    const values = shuffle(Array.from({ length: maxNumber }, (_, index) => index + 1)).slice(0, pairCount);
-    const cards = shuffle(values.flatMap((value) => [0, 1].map((copy) => ({
-      id: `${value}-${copy}`,
-      value,
-      matched: false
-    }))));
-    return { ...base, cards, flipped: [], resolving: false };
-  }
-  if (gameId === "count") {
-    return {
-      ...base,
-      answer,
-      count: answer,
-      tapped: [],
-      object: countObjects[rand(countObjects.length) - 1],
-      options: makeOptions(answer, maxNumber)
-    };
-  }
-  return { ...base, answer, options: makeOptions(answer, maxNumber) };
+// The number to say out loud after a wrong answer, when there is one.
+function answerNumber(round) {
+  if (["find", "count", "missing", "add"].includes(round.gameId)) return round.answer;
+  if (round.gameId === "order") return round.next;
+  return null;
 }
 
 function useCountUp(value) {
@@ -429,6 +212,7 @@ function useCountUp(value) {
 
 export default function App() {
   const [profile, setProfile] = useState(loadState);
+  const [settings, setSettings] = useState(loadSettings);
   const [screen, setScreen] = useState("home");
   const [activeGame, setActiveGame] = useState(null);
   const [round, setRound] = useState(null);
@@ -438,24 +222,28 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [mood, setMood] = useState(null);
   const [speaking, setSpeaking] = useState(false);
-  const [soundOn, setSoundOn] = useState(loadSoundPreference);
   const [shopFx, setShopFx] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [levelUp, setLevelUp] = useState(null);
 
   const walletRef = useRef(null);
   const timers = useRef(new Set());
   const profileRef = useRef(profile);
+  const settingsRef = useRef(settings);
   profileRef.current = profile;
+  settingsRef.current = settings;
 
   const shownCoins = useCountUp(profile.coins);
+  const playLevel = levels[profile.progress.playLevel - 1];
 
   useEffect(() => {
-    sfx.setEnabled(soundOn);
+    sfx.setEnabled(settings.sound);
     try {
-      localStorage.setItem(SOUND_KEY, soundOn ? "on" : "off");
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     } catch {
       // ignore
     }
-  }, [soundOn]);
+  }, [settings]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -498,6 +286,20 @@ export default function App() {
     setProfile((current) => saveState(normalizeState(updater(current))));
   }
 
+  function updateSettings(patch) {
+    setSettings((current) => ({ ...current, ...patch }));
+  }
+
+  function say(text, { track = false, voiceURI, rate } = {}) {
+    const current = settingsRef.current;
+    speak(text, {
+      voiceURI: voiceURI ?? current.voiceURI,
+      rate: rate ?? current.rate,
+      onStart: track ? () => setSpeaking(true) : undefined,
+      onEnd: track ? () => setSpeaking(false) : undefined
+    });
+  }
+
   function showToast(text, tone = "info") {
     setToast({ id: Date.now(), text, tone });
   }
@@ -519,6 +321,7 @@ export default function App() {
     stopSpeaking();
     setSpeaking(false);
     setCelebration(null);
+    setLevelUp(null);
     setScreen("home");
     setActiveGame(null);
     setRound(null);
@@ -531,18 +334,16 @@ export default function App() {
     setMessage("마음에 드는 옷을 골라봐!");
   }
 
-  function sayNumber(number) {
-    const word = numberWords[number] ?? String(number);
-    speak(`${josa(word, "을", "를")} 찾아주세요.`, {
-      onStart: () => setSpeaking(true),
-      onEnd: () => setSpeaking(false)
-    });
+  function speakPrompt(target = round) {
+    const text = target && promptFor(target);
+    if (text) say(text, { track: true });
   }
 
   function startGame(gameId, { fresh = true } = {}) {
     clearTimers();
     const game = gameCards.find((card) => card.id === gameId);
-    const nextRound = makeRound(gameId, profileRef.current.progress.maxNumber);
+    const level = levels[profileRef.current.progress.playLevel - 1];
+    const nextRound = makeRound(gameId, level);
     setActiveGame(game);
     setRound(nextRound);
     setScreen("game");
@@ -551,62 +352,115 @@ export default function App() {
       sfx.tap();
       setMessage(game.intro);
     }
-    if (gameId === "find") {
-      schedule(() => sayNumber(nextRound.answer), fresh ? 650 : 450);
+    if (promptFor(nextRound)) {
+      schedule(() => speakPrompt(nextRound), fresh ? 650 : 450);
     }
+  }
+
+  function pickLevel(levelId) {
+    if (levelId > profile.progress.level) return;
+    sfx.pop();
+    updateProfile((current) => ({
+      ...current,
+      progress: { ...current.progress, playLevel: levelId }
+    }));
+    const level = levels[levelId - 1];
+    setMessage(`${level.id}단계 ${level.name}! 1부터 ${level.max}까지 놀아요.`);
   }
 
   function triggerCelebration(reward) {
     const id = Date.now();
-    setCelebration({ id, reward, word: praise[rand(praise.length) - 1] });
+    setCelebration({ id, reward, word: randomPraise() });
     schedule(() => {
       setCelebration((current) => (current?.id === id ? null : current));
     }, 1500);
   }
 
-  function finishRound(correct, gameId) {
-    const game = gameCards.find((card) => card.id === gameId);
-    const reward = correct ? game.reward : 4;
-    const nextMessage = correct ? praise[rand(praise.length) - 1] : "괜찮아, 다시 해보자!";
+  function finishRound(correct, finishedRound) {
+    const game = gameCards.find((card) => card.id === finishedRound.gameId);
+    const current = profileRef.current.progress;
+    const level = levels[current.playLevel - 1];
+    const reward = correct ? game.reward + (level.id - 1) * 2 : 4;
+
+    let { level: unlocked, playLevel: nextPlayLevel, levelStars } = current;
+    let leveledUp = null;
+    if (correct && current.playLevel === unlocked && unlocked < levels.length) {
+      levelStars += 1;
+      if (levelStars >= levels[unlocked - 1].goal) {
+        unlocked += 1;
+        nextPlayLevel = unlocked;
+        levelStars = 0;
+        leveledUp = levels[unlocked - 1];
+      }
+    }
+    const streak = correct ? current.streak + 1 : 0;
+    const nextProgress = {
+      ...current,
+      level: unlocked,
+      playLevel: nextPlayLevel,
+      levelStars,
+      playedRounds: current.playedRounds + 1,
+      correctAnswers: current.correctAnswers + (correct ? 1 : 0),
+      streak,
+      bestStreak: Math.max(current.bestStreak, streak)
+    };
+
+    const word = randomPraise();
     if (correct) {
       sfx.correct();
       triggerCelebration(reward);
+      setMessage(`${word} 코인 ${reward}개를 받았어.`);
     } else {
       sfx.wrong();
+      const answer = answerNumber(finishedRound);
+      setMessage(answer ? `정답은 ${answer}! 코인 ${reward}개를 받았어.` : `괜찮아, 다시 해보자! 코인 ${reward}개를 받았어.`);
+    }
+    if (settingsRef.current.praiseVoice) {
+      const answer = answerNumber(finishedRound);
+      const line = correct ? word : answer ? `정답은 ${josa(sinoWord(answer), "이야", "야")}` : "괜찮아, 다시 해보자!";
+      schedule(() => say(line), correct ? 250 : 350);
     }
     setMood({ id: Date.now(), type: correct ? "happy" : "oops" });
-    setMessage(`${nextMessage} 코인 ${reward}개를 받았어.`);
-    updateProfile((current) => {
-      const playedRounds = current.progress.playedRounds + 1;
-      const correctAnswers = current.progress.correctAnswers + (correct ? 1 : 0);
-      const streak = correct ? current.progress.streak + 1 : 0;
-      const bestStreak = Math.max(current.progress.bestStreak, streak);
-      const maxNumber = correctAnswers >= UNLOCK_GOAL ? 10 : current.progress.maxNumber;
-      return {
-        ...current,
-        coins: current.coins + reward,
-        progress: { maxNumber, playedRounds, correctAnswers, streak, bestStreak }
-      };
-    });
+    updateProfile((latest) => ({
+      ...latest,
+      coins: latest.coins + reward,
+      progress: nextProgress
+    }));
     schedule(() => coinsToWallet(viewportCenter(), correct ? 6 : 3), correct ? 420 : 500);
-    schedule(() => startGame(gameId, { fresh: false }), correct ? 1650 : 1900);
+
+    if (leveledUp) {
+      schedule(() => {
+        sfx.levelUp();
+        setLevelUp(leveledUp);
+        setMessage(`${leveledUp.id}단계 ${leveledUp.name}에 올랐어!`);
+        if (settingsRef.current.praiseVoice) say(`레벨 업! ${leveledUp.name} 단계가 열렸어요!`);
+      }, 1500);
+      return;
+    }
+    schedule(() => startGame(finishedRound.gameId, { fresh: false }), correct ? 1650 : 2100);
   }
 
-  function chooseNumber(value) {
+  function closeLevelUp() {
+    sfx.tap();
+    setLevelUp(null);
+    if (activeGame) startGame(activeGame.id, { fresh: false });
+  }
+
+  function chooseAnswer(value) {
     if (!round || round.feedback) return;
     const correct = value === round.answer;
     setRound({ ...round, feedback: { picked: value, correct } });
-    finishRound(correct, round.gameId);
+    finishRound(correct, round);
   }
 
   function tapCountObject(index) {
     if (!round || round.gameId !== "count" || round.feedback || round.tapped.includes(index)) return;
     const tapped = [...round.tapped, index];
     setRound({ ...round, tapped });
-    sfx.count(tapped.length);
-    speak(countingWords[tapped.length], { rate: 1 });
+    sfx.count(Math.min(tapped.length, 12));
+    say(countingWord(tapped.length), { rate: "fast" });
     if (tapped.length === round.count) {
-      setMessage(`모두 ${countingWords[tapped.length]}! 이제 숫자를 골라봐.`);
+      setMessage(`모두 ${countingWord(tapped.length)}! 이제 숫자를 골라봐.`);
     }
   }
 
@@ -615,14 +469,14 @@ export default function App() {
     if (round.selected.includes(value)) return;
     if (value !== round.next) {
       setRound({ ...round, feedback: { picked: value, correct: false } });
-      finishRound(false, round.gameId);
+      finishRound(false, round);
       return;
     }
     const selected = [...round.selected, value];
-    sfx.count(value);
+    sfx.count(Math.min(selected.length, 12));
     if (value === round.answer) {
       setRound({ ...round, selected, feedback: { picked: value, correct: true } });
-      finishRound(true, round.gameId);
+      finishRound(true, round);
       return;
     }
     setRound({ ...round, selected, next: value + 1 });
@@ -666,7 +520,7 @@ export default function App() {
         });
         setMessage(`${first.value} 짝을 찾았어!`);
         const allMatched = round.cards.every((candidate) => candidate.matched || candidate.value === first.value);
-        if (allMatched) schedule(() => finishRound(true, "memory"), 450);
+        if (allMatched) schedule(() => finishRound(true, round), 450);
       }, 420);
       return;
     }
@@ -680,6 +534,29 @@ export default function App() {
           : current
       ));
     }, 1000);
+  }
+
+  function popBalloon(balloonId) {
+    if (!round || round.gameId !== "balloon" || round.feedback) return;
+    const balloon = round.balloons.find((candidate) => candidate.id === balloonId);
+    if (!balloon || round.popped.includes(balloonId)) return;
+
+    if (balloon.value !== round.target) {
+      sfx.wrong();
+      setRound({ ...round, wrong: { id: balloonId, key: Date.now() } });
+      setMessage(`그건 ${balloon.value}! ${numberJosa(round.target, "을", "를")} 찾아봐.`);
+      return;
+    }
+
+    sfx.pop();
+    const popped = [...round.popped, balloonId];
+    if (popped.length >= round.goal) {
+      setRound({ ...round, popped, wrong: null, feedback: { correct: true } });
+      finishRound(true, round);
+      return;
+    }
+    setRound({ ...round, popped, wrong: null });
+    setMessage(`펑! ${round.goal - popped.length}개 더 찾아봐.`);
   }
 
   function buyOrEquip(item, element) {
@@ -750,7 +627,7 @@ export default function App() {
   }
 
   function resetData() {
-    const confirmed = window.confirm("코인, 아이템, 진행도를 처음 상태로 되돌릴까요?");
+    const confirmed = window.confirm("코인, 아이템, 단계를 처음 상태로 되돌릴까요?");
     if (!confirmed) return;
     clearTimers();
     stopSpeaking();
@@ -762,11 +639,13 @@ export default function App() {
     }
     saveState(resetProfile);
     setProfile(resetProfile);
+    setSettingsOpen(false);
     setScreen("home");
     setActiveGame(null);
     setRound(null);
     setShopCategory("all");
     setCelebration(null);
+    setLevelUp(null);
     setMessage("저장된 데이터를 처음 상태로 돌렸어.");
   }
 
@@ -790,14 +669,14 @@ export default function App() {
         <div className="top-actions">
           <button
             className="icon-button"
-            onClick={() => setSoundOn((value) => !value)}
-            aria-label={soundOn ? "효과음 끄기" : "효과음 켜기"}
-            aria-pressed={soundOn}
+            onClick={() => updateSettings({ sound: !settings.sound })}
+            aria-label={settings.sound ? "효과음 끄기" : "효과음 켜기"}
+            aria-pressed={settings.sound}
           >
-            {soundOn ? <SpeakerIcon /> : <SoundOffIcon />}
+            {settings.sound ? <SpeakerIcon /> : <SoundOffIcon />}
           </button>
-          <button className="icon-button" onClick={resetData} aria-label="초기화">
-            <ResetIcon />
+          <button className="icon-button" onClick={() => setSettingsOpen(true)} aria-label="설정">
+            <GearIcon />
           </button>
           <div className="wallet" ref={walletRef} aria-label={`코인 ${profile.coins}개`}>
             <CoinIcon />
@@ -808,6 +687,18 @@ export default function App() {
 
       {celebration && (
         <Celebration key={celebration.id} reward={celebration.reward} word={celebration.word} />
+      )}
+
+      {levelUp && <LevelUpOverlay level={levelUp} onClose={closeLevelUp} />}
+
+      {settingsOpen && (
+        <SettingsSheet
+          settings={settings}
+          onChange={updateSettings}
+          onPreview={(voiceURI, rate) => say("안녕! 같이 숫자 놀이 하자. 일, 이, 삼!", { voiceURI, rate })}
+          onReset={resetData}
+          onClose={() => setSettingsOpen(false)}
+        />
       )}
 
       {toast && (
@@ -833,6 +724,7 @@ export default function App() {
               onStart={startGame}
               onShop={openShop}
               onGift={claimDailyReward}
+              onPickLevel={pickLevel}
             />
           )}
 
@@ -840,14 +732,16 @@ export default function App() {
             <GameScreen
               game={activeGame}
               round={round}
-              maxNumber={profile.progress.maxNumber}
+              level={levels[round.level - 1] ?? playLevel}
+              reward={activeGame.reward + ((round.level ?? 1) - 1) * 2}
               speaking={speaking}
               onBack={goHome}
-              onChoose={chooseNumber}
+              onSpeak={promptFor(round) ? () => speakPrompt() : null}
+              onAnswer={chooseAnswer}
               onCountTap={tapCountObject}
               onOrder={chooseOrder}
               onMemory={chooseMemory}
-              onSpeak={() => round?.answer && sayNumber(round.answer)}
+              onBalloon={popBalloon}
             />
           )}
 
@@ -1041,9 +935,12 @@ function Character({ equippedItems, message, roomItem, progress, mood }) {
   );
 }
 
-function Home({ profile, games, onStart, onShop, onGift }) {
-  const unlocked = profile.progress.maxNumber >= 10;
-  const earned = Math.min(UNLOCK_GOAL, profile.progress.correctAnswers);
+function Home({ profile, games, onStart, onShop, onGift, onPickLevel }) {
+  const { level: unlocked, playLevel, levelStars } = profile.progress;
+  const current = levels[playLevel - 1];
+  const top = levels[unlocked - 1];
+  const maxed = unlocked >= levels.length;
+  const percent = maxed ? 100 : Math.round((levelStars / top.goal) * 100);
   const giftTaken = profile.lastRewardDate === todayKey();
 
   return (
@@ -1051,8 +948,8 @@ function Home({ profile, games, onStart, onShop, onGift }) {
       <section className="home-hero enter" style={{ "--i": 0 }}>
         <div className="hero-copy">
           <p className="eyebrow">
-            <span className="range-chip">1 ~ {profile.progress.maxNumber}</span>
-            {unlocked ? "10까지 모두 할 수 있어요" : "숫자 친구들과 놀아요"}
+            <span className={`level-pill level-${current.id}`}>{current.id}단계 {current.name}</span>
+            1부터 {current.max}까지
           </p>
           <h1>
             오늘의 <span className="rainbow-word">{"숫자".split("").map((char, index) => <span key={index}>{char}</span>)}</span> 놀이
@@ -1074,198 +971,74 @@ function Home({ profile, games, onStart, onShop, onGift }) {
         </div>
       </section>
 
-      <section className="progress-panel enter" style={{ "--i": 1 }} aria-label="진행도">
-        <div className="progress-head">
-          <strong>{unlocked ? "10까지 열렸어!" : "별을 모아 10까지 열기"}</strong>
-          <span>{earned} / {UNLOCK_GOAL}</span>
+      <section className="level-panel enter" style={{ "--i": 1 }} aria-label="단계">
+        <div className="level-progress">
+          <div className="level-progress-head">
+            <strong>
+              {maxed ? "모든 단계를 열었어요!" : `${top.id + 1}단계 ${levels[top.id].name}까지`}
+            </strong>
+            {!maxed && (
+              <span className="star-count">
+                <StarShape />
+                {levelStars} / {top.goal}
+              </span>
+            )}
+          </div>
+          <div className="level-bar">
+            <span style={{ width: `${percent}%` }} />
+          </div>
+          {playLevel < unlocked && (
+            <p className="level-hint">연습 중이에요. 별은 {unlocked}단계에서 모여요.</p>
+          )}
         </div>
-        <div className="star-track">
-          {Array.from({ length: UNLOCK_GOAL }, (_, index) => (
-            <span
-              key={index}
-              className={`star-slot ${index < earned ? "is-filled" : ""}`}
-              style={{ "--i": index }}
-            >
-              <StarShape />
-            </span>
-          ))}
+        <div className="level-chips" role="radiogroup" aria-label="단계 고르기">
+          {levels.map((level) => {
+            const open = level.id <= unlocked;
+            const active = level.id === playLevel;
+            return (
+              <button
+                key={level.id}
+                role="radio"
+                aria-checked={active}
+                className={`level-chip level-${level.id} ${active ? "is-active" : ""} ${open ? "" : "is-locked"}`}
+                onClick={() => onPickLevel(level.id)}
+                disabled={!open}
+                style={{ "--i": level.id }}
+              >
+                <span className="level-chip-num">{open ? level.id : <LockIcon />}</span>
+                <span className="level-chip-name">{level.name}</span>
+                {active && <span className="level-chip-check"><CheckIcon /></span>}
+              </button>
+            );
+          })}
         </div>
       </section>
 
       <section className="game-grid" aria-label="게임 목록">
-        {games.map((game, index) => (
-          <button
-            key={game.id}
-            className={`game-card ${game.color} enter`}
-            style={{ "--i": index + 2 }}
-            onClick={() => onStart(game.id)}
-          >
-            <span className="game-art">
-              <img src={game.image} alt="" aria-hidden="true" />
-            </span>
-            <span className="game-copy">
-              <strong>{game.title}</strong>
-              <small>{game.subtitle}</small>
+        {games.map((game, index) => {
+          const Art = game.art ? gameArt[game.art] : null;
+          return (
+            <button
+              key={game.id}
+              className={`game-card ${game.color} enter`}
+              style={{ "--i": index + 2 }}
+              onClick={() => onStart(game.id)}
+            >
+              <span className="game-art">
+                {Art ? <Art /> : <img src={game.image} alt="" aria-hidden="true" />}
+              </span>
+              <span className="game-copy">
+                <strong>{game.title}</strong>
+                <small>{game.subtitle}</small>
+              </span>
               <span className="game-meta">
-                <span className="reward-chip"><CoinIcon />+{game.reward}</span>
+                <span className="reward-chip"><CoinIcon />+{game.reward + (current.id - 1) * 2}</span>
                 <span className="play-dot"><PlayIcon /></span>
               </span>
-            </span>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </section>
-    </div>
-  );
-}
-
-function tileState(value, round, answer) {
-  const feedback = round.feedback;
-  if (!feedback) return "";
-  if (value === feedback.picked) return feedback.correct ? "is-correct" : "is-wrong";
-  if (!feedback.correct && value === answer) return "is-answer";
-  return "is-dim";
-}
-
-function GameScreen({ game, round, maxNumber, speaking, onBack, onChoose, onCountTap, onOrder, onMemory, onSpeak }) {
-  return (
-    <div className={`play-panel play-${game.color}`}>
-      <div className="play-header">
-        <button className="back-button" onClick={onBack} aria-label="처음으로">
-          <BackIcon />
-          <span>처음</span>
-        </button>
-        <div className="play-title">
-          <h2>{game.title}</h2>
-          <p className="eyebrow">{game.subtitle}</p>
-        </div>
-        <span className="reward-chip big"><CoinIcon />+{game.reward}</span>
-      </div>
-
-      <div className="round" key={round.id}>
-        {game.id === "find" && (
-          <>
-            <div className={`voice-stage ${speaking ? "is-speaking" : ""}`}>
-              <button className="speaker-button" onClick={onSpeak} aria-label="다시 듣기">
-                <span className="speaker-ring ring-1" />
-                <span className="speaker-ring ring-2" />
-                <span className="speaker-ring ring-3" />
-                <span className="speaker-core"><SpeakerIcon /></span>
-              </button>
-              <div className="voice-copy">
-                <div className="eq" aria-hidden="true">
-                  {Array.from({ length: 7 }, (_, index) => <i key={index} style={{ "--i": index }} />)}
-                </div>
-                <strong>잘 듣고 숫자를 찾아요</strong>
-                <span>스피커를 누르면 다시 들려줘요</span>
-              </div>
-            </div>
-            <OptionGrid round={round} onChoose={onChoose} />
-          </>
-        )}
-
-        {game.id === "count" && (
-          <>
-            <div className="count-stage" aria-label={`${round.object.name} ${round.count}개`}>
-              <div className="count-field">
-                {Array.from({ length: round.count }, (_, index) => {
-                  const order = round.tapped.indexOf(index) + 1;
-                  return (
-                    <button
-                      key={index}
-                      className={`count-object ${order ? `is-counted n-${order}` : ""}`}
-                      style={{ "--i": index, "--tilt": `${((index * 37) % 13) - 6}deg` }}
-                      onClick={() => onCountTap(index)}
-                      aria-label={order ? `${order}번째` : `${round.object.name} 세기`}
-                    >
-                      <img src={round.object.image} alt="" aria-hidden="true" />
-                      {order > 0 && <span className="count-badge">{order}</span>}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="count-meter" aria-hidden="true">
-                <span>센 개수</span>
-                <strong key={round.tapped.length}>{round.tapped.length}</strong>
-              </div>
-            </div>
-            <OptionGrid round={round} onChoose={onChoose} />
-          </>
-        )}
-
-        {game.id === "order" && (
-          <>
-            <div className="order-track" aria-label={`${round.selected.length}개 눌렀어요`}>
-              {Array.from({ length: maxNumber }, (_, index) => {
-                const value = index + 1;
-                const done = round.selected.includes(value);
-                const isNext = !round.feedback && value === round.next;
-                return (
-                  <span
-                    key={value}
-                    className={`track-slot n-${value} ${done ? "is-done" : ""} ${isNext ? "is-next" : ""}`}
-                  >
-                    {value}
-                  </span>
-                );
-              })}
-            </div>
-            <div className={`order-grid count-${maxNumber}`}>
-              {round.options.map((value, index) => (
-                <button
-                  key={value}
-                  className={`number-tile n-${value} ${round.selected.includes(value) ? "selected" : ""} ${tileState(value, round, round.next)}`}
-                  style={{ "--i": index }}
-                  onClick={() => onOrder(value)}
-                >
-                  <span>{value}</span>
-                  {round.selected.includes(value) && <span className="tile-check"><CheckIcon /></span>}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {game.id === "memory" && (
-          <div className="memory-grid">
-            {round.cards.map((card, index) => {
-              const visible = card.matched || round.flipped.includes(card.id);
-              return (
-                <button
-                  key={card.id}
-                  className={`memory-card n-${card.value} ${visible ? "visible" : ""} ${card.matched ? "matched" : ""}`}
-                  style={{ "--i": index }}
-                  onClick={() => onMemory(card.id)}
-                  aria-label={visible ? `${card.value}` : "뒤집힌 카드"}
-                >
-                  <span className="memory-inner">
-                    <span className="memory-face memory-back">
-                      <StarShape />
-                    </span>
-                    <span className="memory-face memory-front">{card.value}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function OptionGrid({ round, onChoose }) {
-  return (
-    <div className="option-grid">
-      {round.options.map((value, index) => (
-        <button
-          key={value}
-          className={`number-tile n-${value} ${tileState(value, round, round.answer)}`}
-          style={{ "--i": index }}
-          onClick={() => onChoose(value)}
-        >
-          <span>{value}</span>
-        </button>
-      ))}
     </div>
   );
 }

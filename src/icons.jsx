@@ -154,3 +154,85 @@ export function LockIcon() {
     </svg>
   );
 }
+
+export function GearIcon() {
+  return (
+    <svg {...base} strokeWidth="2.2">
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5" />
+      <circle cx="12" cy="12" r="6.6" />
+    </svg>
+  );
+}
+
+export function CrownIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 64 48" aria-hidden="true">
+      <path d="M6 14l13 12 13-20 13 20 13-12-5 28H11z" fill="#ffc62e" stroke="#e5a100" strokeWidth="3" strokeLinejoin="round" />
+      <rect x="11" y="38" width="42" height="7" rx="3" fill="#e5a100" />
+      <circle cx="32" cy="6" r="4.5" fill="#ff5c7a" />
+      <circle cx="6" cy="14" r="4" fill="#3d8bff" />
+      <circle cx="58" cy="14" r="4" fill="#36bf77" />
+      <circle cx="32" cy="29" r="4" fill="#fff6c2" />
+    </svg>
+  );
+}
+
+export function CompareArt() {
+  return (
+    <svg className="game-svg" viewBox="0 0 100 100" aria-hidden="true">
+      <path d="M50 58l-11 22h22z" fill="#e5a100" />
+      <g transform="rotate(-12 50 56)">
+        <rect x="8" y="52" width="84" height="8" rx="4" fill="#ffc62e" />
+        <circle cx="20" cy="44" r="8" fill="#ff5c7a" />
+        <circle cx="34" cy="44" r="8" fill="#ff8a3d" />
+        <circle cx="27" cy="31" r="8" fill="#ff5c7a" />
+        <circle cx="76" cy="44" r="8" fill="#3d8bff" />
+      </g>
+      <rect x="30" y="80" width="40" height="7" rx="3.5" fill="#c98f00" />
+    </svg>
+  );
+}
+
+export function MissingArt() {
+  return (
+    <svg className="game-svg" viewBox="0 0 100 100" aria-hidden="true">
+      <rect x="4" y="34" width="28" height="32" rx="9" fill="#ff5c7a" />
+      <text x="18" y="58" textAnchor="middle" fontSize="20" fill="#fff" fontFamily="Jua, sans-serif">1</text>
+      <rect className="missing-art-q" x="36" y="28" width="28" height="38" rx="9" fill="#fff" stroke="#e35cd0" strokeWidth="4" strokeDasharray="6 4" />
+      <text x="50" y="56" textAnchor="middle" fontSize="22" fill="#e35cd0" fontFamily="Jua, sans-serif">?</text>
+      <rect x="68" y="34" width="28" height="32" rx="9" fill="#f2b100" />
+      <text x="82" y="58" textAnchor="middle" fontSize="20" fill="#fff" fontFamily="Jua, sans-serif">3</text>
+    </svg>
+  );
+}
+
+export function MathArt() {
+  return (
+    <svg className="game-svg" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="16" cy="40" r="11" fill="#ff5c7a" />
+      <circle cx="30" cy="58" r="11" fill="#ff5c7a" />
+      <path d="M16 29c1-5 4-7 7-7" stroke="#1f9658" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <rect x="44" y="45" width="14" height="5" rx="2.5" fill="#14a38b" />
+      <rect x="48.5" y="40.5" width="5" height="14" rx="2.5" fill="#14a38b" />
+      <circle cx="78" cy="48" r="11" fill="#ff5c7a" />
+      <path d="M78 37c1-5 4-7 7-7" stroke="#1f9658" strokeWidth="3" fill="none" strokeLinecap="round" />
+      <rect x="20" y="78" width="60" height="12" rx="6" fill="#14a38b" opacity="0.25" />
+    </svg>
+  );
+}
+
+export function BalloonArt() {
+  return (
+    <svg className="game-svg" viewBox="0 0 100 100" aria-hidden="true">
+      <path d="M28 58c0 12 6 18 2 34M52 48c0 14-2 24 2 44M76 60c0 10-4 18 0 32" stroke="#b9b6cc" strokeWidth="2" fill="none" />
+      <ellipse cx="28" cy="40" rx="15" ry="18" fill="#3d8bff" />
+      <ellipse cx="52" cy="28" rx="16" ry="19" fill="#ff5c7a" />
+      <ellipse cx="76" cy="42" rx="15" ry="18" fill="#36bf77" />
+      <text x="52" y="35" textAnchor="middle" fontSize="18" fill="#fff" fontFamily="Jua, sans-serif">5</text>
+      <ellipse cx="46" cy="20" rx="4" ry="6" fill="#fff" opacity="0.45" />
+      <ellipse cx="23" cy="33" rx="3.5" ry="5" fill="#fff" opacity="0.45" />
+      <ellipse cx="71" cy="35" rx="3.5" ry="5" fill="#fff" opacity="0.45" />
+    </svg>
+  );
+}
