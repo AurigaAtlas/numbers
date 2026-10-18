@@ -52,3 +52,9 @@ npm run dev
 
 이 저장소를 GitHub에 올린 뒤 Settings > Pages에서 Source를 `GitHub Actions`로 설정하세요.
 `main` 브랜치에 push하면 `.github/workflows/deploy.yml`이 자동으로 빌드하고 GitHub Pages에 배포합니다.
+
+## 그림 다시 만들기
+
+`art/` 폴더에 일부 상점 소품, 방 배경, 별 그림, 숫자 찾기 아이콘의 벡터 원본이 있습니다.
+수정한 뒤 Playwright가 있는 환경에서 `node art/render.mjs`를 실행하면 `public/assets`의 PNG가 다시 만들어집니다.
+(특정 그림만: `node art/render.mjs magic-book room-moon`)

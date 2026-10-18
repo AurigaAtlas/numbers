@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gameCards, levels, praise, shopCategories, shopItems } from "./data";
 import { GameScreen } from "./games";
 import {
+  BackIcon,
   BagIcon,
   BalloonArt,
   CheckIcon,
