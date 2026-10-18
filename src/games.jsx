@@ -113,7 +113,7 @@ function ObjectPile({ count, object, className = "", counted, onTap, leaving = 0
   );
 }
 
-function CountGame({ round, onCountTap, onAnswer }) {
+export function CountGame({ round, onCountTap, onAnswer }) {
   return (
     <>
       <div className="count-stage" aria-label={`${round.object.name} ${round.count}개`}>
@@ -256,7 +256,7 @@ function MissingGame({ round, onAnswer }) {
   );
 }
 
-function AddGame({ round, onAnswer }) {
+export function AddGame({ round, onAnswer }) {
   const minus = round.op === "-";
   return (
     <>

@@ -70,7 +70,8 @@ const missionPool = {
   fun: [
     { type: "streak", target: 3, text: "3번 연속 맞히기", icon: "🔥" },
     { type: "dex", target: 3, text: "도감에서 3개 들어보기", icon: "📖" },
-    { type: "streak", target: 5, text: "5번 연속 맞히기", icon: "🔥" }
+    { type: "streak", target: 5, text: "5번 연속 맞히기", icon: "🔥" },
+    { type: "board", target: 3, text: "주사위 마을 3번 굴리기", icon: "🎲" }
   ]
 };
 
@@ -127,6 +128,9 @@ export function applyMissionEvent(daily, event) {
         break;
       case "dex":
         if (event.dex) progress += 1;
+        break;
+      case "board":
+        if (event.boardRoll) progress += 1;
         break;
       default:
         break;
