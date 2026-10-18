@@ -307,3 +307,46 @@ export const countObjects = [
 ];
 
 export const praise = ["잘했어!", "멋져!", "좋았어!", "정말 정확해!", "최고야!"];
+
+export const hangulGameCards = [
+  {
+    id: "h-listen",
+    track: "hangul",
+    title: "소리 듣고 찾기",
+    subtitle: "소리를 듣고 글자를 골라요",
+    intro: "잘 듣고 맞는 글자를 눌러봐!",
+    art: "hListen",
+    color: "coral",
+    reward: 9
+  },
+  {
+    id: "h-picture",
+    track: "hangul",
+    title: "그림 글자",
+    subtitle: "그림을 보고 글자를 찾아요",
+    intro: "그림을 보고 맞는 글자를 찾아봐!",
+    art: "hPicture",
+    color: "mint",
+    reward: 9
+  },
+  {
+    id: "h-build",
+    track: "hangul",
+    title: "글자 만들기",
+    subtitle: "자음과 모음을 합쳐요",
+    intro: "두 친구를 합치면 어떤 글자가 될까?",
+    art: "hBuild",
+    color: "sky",
+    reward: 10
+  },
+  {
+    id: "h-trace",
+    track: "hangul",
+    title: "따라 쓰기",
+    subtitle: "손가락으로 글자를 써요",
+    intro: "회색 글자를 손가락으로 따라 써봐!",
+    art: "hTrace",
+    color: "lilac",
+    reward: 12
+  }
+];

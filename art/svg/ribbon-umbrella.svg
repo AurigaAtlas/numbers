@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+    <defs>
+      <linearGradient id="up" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb3cd"/><stop offset="1" stop-color="#ff6f9f"/></linearGradient>
+      <linearGradient id="uw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffe3ee"/></linearGradient>
+      <linearGradient id="uh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c98a12"/><stop offset="0.5" stop-color="#ffe08a"/><stop offset="1" stop-color="#c98a12"/></linearGradient>
+      
+  <linearGradient id="ug" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#fff2b0"/>
+    <stop offset="0.45" stop-color="#f7c948"/>
+    <stop offset="1" stop-color="#c98a12"/>
+  </linearGradient>
+    </defs>
+    <ellipse cx="256" cy="490" rx="60" ry="10" fill="#5a3a5e" opacity="0.18"/>
+    <path d="M256 250 L256 430 Q256 478 296 478 Q330 478 330 446" fill="none" stroke="#b07a10" stroke-width="20" stroke-linecap="round"/>
+    <path d="M256 250 L256 430 Q256 478 296 478 Q330 478 330 446" fill="none" stroke="url(#uh)" stroke-width="13" stroke-linecap="round"/>
+    <circle cx="72.7" cy="278.8" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="89.3" cy="287.4" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="106.0" cy="291.0" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="122.7" cy="289.4" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="139.3" cy="282.8" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="172.7" cy="284.8" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="189.3" cy="293.4" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="206.0" cy="297.0" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="222.7" cy="295.4" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="239.3" cy="288.8" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="272.7" cy="288.8" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="289.3" cy="295.4" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="306.0" cy="297.0" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="322.7" cy="293.4" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="339.3" cy="284.8" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="372.7" cy="282.8" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="389.3" cy="289.4" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="406.0" cy="291.0" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="422.7" cy="287.4" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/><circle cx="439.3" cy="278.8" r="8" fill="#ffffff" stroke="#f3b8cd" stroke-width="2"/>
+    <path d="M256 96 Q136 136 56 256 Q106 305 156 262 Q226 136 256 96Z" fill="url(#up)" stroke="#d94f84" stroke-width="5" stroke-linejoin="round"/><path d="M256 96 Q186 136 156 262 Q206 311 256 268 Q276 136 256 96Z" fill="url(#uw)" stroke="#d94f84" stroke-width="5" stroke-linejoin="round"/><path d="M256 96 Q236 136 256 268 Q306 311 356 262 Q326 136 256 96Z" fill="url(#up)" stroke="#d94f84" stroke-width="5" stroke-linejoin="round"/><path d="M256 96 Q286 136 356 262 Q406 305 456 256 Q376 136 256 96Z" fill="url(#uw)" stroke="#d94f84" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M150 150 Q190 112 236 104" stroke="#ffffff" stroke-width="10" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <circle cx="256" cy="84" r="16" fill="url(#ug)" stroke="#b07a10" stroke-width="4"/>
+    <g transform="translate(256 292)">
+      <path d="M0 0 C-24 -34 -70 -24 -60 6 C-52 28 -20 18 0 0Z" fill="#9b7bff" stroke="#6a4bd6" stroke-width="4"/>
+      <path d="M0 0 C24 -34 70 -24 60 6 C52 28 20 18 0 0Z" fill="#9b7bff" stroke="#6a4bd6" stroke-width="4"/>
+      <path d="M-4 6 L-24 58 L-10 52 L-2 66Z M4 6 L24 58 L10 52 L2 66Z" fill="#8a68f5" stroke="#6a4bd6" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="0" cy="2" r="12" fill="#b49cff" stroke="#6a4bd6" stroke-width="4"/>
+    </g>
+    <path d="M86 92 Q89.24 106.76 104 110 Q89.24 113.24 86 128 Q82.76 113.24 68 110 Q82.76 106.76 86 92Z" fill="#fff6c2"/><path d="M440 106 Q442.52 117.48 454 120 Q442.52 122.52 440 134 Q437.48 122.52 426 120 Q437.48 117.48 440 106Z" fill="#ffffff"/><path d="M436 328 Q438.16 337.84 448 340 Q438.16 342.16 436 352 Q433.84 342.16 424 340 Q433.84 337.84 436 328Z" fill="#fff6c2"/>
+  </svg>

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { gameCards, levels, praise, shopCategories, shopItems } from "./data";
+import { gameCards, hangulGameCards, levels, praise, shopCategories, shopItems } from "./data";
 import { GameScreen } from "./games";
 import {
+  BackIcon,
   BagIcon,
   BalloonArt,
   CheckIcon,
@@ -11,7 +12,11 @@ import {
   FlameIcon,
   GearIcon,
   GiftIcon,
+  HBuildArt,
   HeartShape,
+  HListenArt,
+  HPictureArt,
+  HTraceArt,
   LockIcon,
   MathArt,
   MissingArt,
@@ -22,6 +27,7 @@ import {
   TrophyIcon
 } from "./icons";
 import { bump, centerOf, flyCoins, prefersReducedMotion, viewportCenter } from "./motion";
+import { hangulAnswerSpeech, hangulLevels, hangulPrompt, makeHangulRound } from "./hangul";
 import { LevelUpOverlay, SettingsSheet } from "./overlays";
 import { countingWord, josa, makeRound, numberJosa, sinoWord } from "./rounds";
 import { sfx } from "./sfx";
@@ -31,6 +37,7 @@ const STORAGE_KEY = "numbers-playground-v2";
 const LEGACY_STORAGE_KEY = "numbers-playground-v1";
 const SETTINGS_KEY = "numbers-playground-settings";
 const LEGACY_SOUND_KEY = "numbers-playground-sound";
+const SUBJECT_KEY = "numbers-playground-subject";
 
 const defaultState = {
   coins: 30,
@@ -45,6 +52,9 @@ const defaultState = {
     level: 1,
     playLevel: 1,
     levelStars: 0,
+    hangulLevel: 1,
+    hangulPlayLevel: 1,
+    hangulStars: 0,
     playedRounds: 0,
     correctAnswers: 0,
     streak: 0,
@@ -61,7 +71,58 @@ const defaultSettings = {
 };
 
 const confettiColors = ["#FF5C7A", "#FFC62E", "#3CC47C", "#3D8BFF", "#A07CFF", "#FF8A3D", "#22B8CF"];
-const gameArt = { compare: CompareArt, missing: MissingArt, math: MathArt, balloon: BalloonArt };
+const gameArt = {
+  compare: CompareArt,
+  missing: MissingArt,
+  math: MathArt,
+  balloon: BalloonArt,
+  hListen: HListenArt,
+  hPicture: HPictureArt,
+  hBuild: HBuildArt,
+  hTrace: HTraceArt
+};
+
+const allGames = [...gameCards, ...hangulGameCards];
+
+// Numbers and Hangul level up separately; both live in profile.progress.
+const tracks = {
+  numbers: {
+    label: "숫자 놀이",
+    levels,
+    games: gameCards,
+    keys: { level: "level", play: "playLevel", stars: "levelStars" },
+    rangeText: (level) => `1부터 ${level.max}까지`
+  },
+  hangul: {
+    label: "한글 놀이",
+    levels: hangulLevels,
+    games: hangulGameCards,
+    keys: { level: "hangulLevel", play: "hangulPlayLevel", stars: "hangulStars" },
+    rangeText: (level) => level.perk
+  }
+};
+
+function trackOf(gameId) {
+  return gameId.startsWith("h-") ? "hangul" : "numbers";
+}
+
+function trackState(progress, track) {
+  const { keys } = tracks[track];
+  return { level: progress[keys.level], playLevel: progress[keys.play], levelStars: progress[keys.stars] };
+}
+
+function withTrackState(progress, track, state) {
+  const { keys } = tracks[track];
+  return { ...progress, [keys.level]: state.level, [keys.play]: state.playLevel, [keys.stars]: state.levelStars };
+}
+
+function loadSubject() {
+  try {
+    return localStorage.getItem(SUBJECT_KEY) === "hangul" ? "hangul" : "numbers";
+  } catch {
+    return "numbers";
+  }
+}
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -82,6 +143,8 @@ function normalizeProgress(raw) {
   }
   progress.level = clamp(progress.level, 1, levels.length);
   progress.playLevel = clamp(progress.playLevel, 1, progress.level);
+  progress.hangulLevel = clamp(progress.hangulLevel, 1, hangulLevels.length);
+  progress.hangulPlayLevel = clamp(progress.hangulPlayLevel, 1, progress.hangulLevel);
   return progress;
 }
 
@@ -144,6 +207,7 @@ function randomPraise() {
 
 // What the voice says when a round starts (and on "다시 듣기").
 function promptFor(round) {
+  if (trackOf(round.gameId) === "hangul") return hangulPrompt(round);
   switch (round.gameId) {
     case "find":
       return `${josa(sinoWord(round.answer), "을", "를")} 찾아주세요.`;
@@ -165,11 +229,16 @@ function promptFor(round) {
   }
 }
 
-// The number to say out loud after a wrong answer, when there is one.
-function answerNumber(round) {
-  if (["find", "count", "missing", "add"].includes(round.gameId)) return round.answer;
-  if (round.gameId === "order") return round.next;
-  return null;
+// After a wrong answer: what to show and what the voice says, when there is one.
+function answerFeedback(round) {
+  if (trackOf(round.gameId) === "hangul") {
+    const say = hangulAnswerSpeech(round);
+    return say ? { show: round.answer, say } : null;
+  }
+  const number = ["find", "count", "missing", "add"].includes(round.gameId)
+    ? round.answer
+    : round.gameId === "order" ? round.next : null;
+  return number ? { show: number, say: sinoWord(number) } : null;
 }
 
 function useCountUp(value) {
@@ -225,6 +294,7 @@ export default function App() {
   const [shopFx, setShopFx] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [levelUp, setLevelUp] = useState(null);
+  const [subject, setSubject] = useState(loadSubject);
 
   const walletRef = useRef(null);
   const timers = useRef(new Set());
@@ -234,7 +304,6 @@ export default function App() {
   settingsRef.current = settings;
 
   const shownCoins = useCountUp(profile.coins);
-  const playLevel = levels[profile.progress.playLevel - 1];
 
   useEffect(() => {
     sfx.setEnabled(settings.sound);
@@ -244,6 +313,14 @@ export default function App() {
       // ignore
     }
   }, [settings]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SUBJECT_KEY, subject);
+    } catch {
+      // ignore
+    }
+  }, [subject]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -341,9 +418,10 @@ export default function App() {
 
   function startGame(gameId, { fresh = true } = {}) {
     clearTimers();
-    const game = gameCards.find((card) => card.id === gameId);
-    const level = levels[profileRef.current.progress.playLevel - 1];
-    const nextRound = makeRound(gameId, level);
+    const game = allGames.find((card) => card.id === gameId);
+    const track = trackOf(gameId);
+    const level = tracks[track].levels[trackState(profileRef.current.progress, track).playLevel - 1];
+    const nextRound = track === "hangul" ? makeHangulRound(gameId, level) : makeRound(gameId, level);
     setActiveGame(game);
     setRound(nextRound);
     setScreen("game");
@@ -357,15 +435,23 @@ export default function App() {
     }
   }
 
-  function pickLevel(levelId) {
-    if (levelId > profile.progress.level) return;
+  function pickLevel(track, levelId) {
+    const state = trackState(profile.progress, track);
+    if (levelId > state.level) return;
     sfx.pop();
     updateProfile((current) => ({
       ...current,
-      progress: { ...current.progress, playLevel: levelId }
+      progress: withTrackState(current.progress, track, { ...trackState(current.progress, track), playLevel: levelId })
     }));
-    const level = levels[levelId - 1];
-    setMessage(`${level.id}단계 ${level.name}! 1부터 ${level.max}까지 놀아요.`);
+    const level = tracks[track].levels[levelId - 1];
+    setMessage(`${level.id}단계 ${level.name}! ${tracks[track].rangeText(level)}`);
+  }
+
+  function pickSubject(next) {
+    if (next === subject) return;
+    sfx.tap();
+    setSubject(next);
+    setMessage(next === "hangul" ? "가나다! 한글이랑 놀아볼까?" : "하나 둘 셋! 숫자랑 놀아볼까?");
   }
 
   function triggerCelebration(reward) {
@@ -377,28 +463,28 @@ export default function App() {
   }
 
   function finishRound(correct, finishedRound) {
-    const game = gameCards.find((card) => card.id === finishedRound.gameId);
+    const game = allGames.find((card) => card.id === finishedRound.gameId);
+    const track = trackOf(finishedRound.gameId);
+    const trackLevels = tracks[track].levels;
     const current = profileRef.current.progress;
-    const level = levels[current.playLevel - 1];
+    const state = trackState(current, track);
+    const level = trackLevels[state.playLevel - 1];
     const reward = correct ? game.reward + (level.id - 1) * 2 : 4;
 
-    let { level: unlocked, playLevel: nextPlayLevel, levelStars } = current;
+    let { level: unlocked, playLevel: nextPlayLevel, levelStars } = state;
     let leveledUp = null;
-    if (correct && current.playLevel === unlocked && unlocked < levels.length) {
+    if (correct && state.playLevel === unlocked && unlocked < trackLevels.length) {
       levelStars += 1;
-      if (levelStars >= levels[unlocked - 1].goal) {
+      if (levelStars >= trackLevels[unlocked - 1].goal) {
         unlocked += 1;
         nextPlayLevel = unlocked;
         levelStars = 0;
-        leveledUp = levels[unlocked - 1];
+        leveledUp = trackLevels[unlocked - 1];
       }
     }
     const streak = correct ? current.streak + 1 : 0;
     const nextProgress = {
-      ...current,
-      level: unlocked,
-      playLevel: nextPlayLevel,
-      levelStars,
+      ...withTrackState(current, track, { level: unlocked, playLevel: nextPlayLevel, levelStars }),
       playedRounds: current.playedRounds + 1,
       correctAnswers: current.correctAnswers + (correct ? 1 : 0),
       streak,
@@ -412,12 +498,12 @@ export default function App() {
       setMessage(`${word} 코인 ${reward}개를 받았어.`);
     } else {
       sfx.wrong();
-      const answer = answerNumber(finishedRound);
-      setMessage(answer ? `정답은 ${answer}! 코인 ${reward}개를 받았어.` : `괜찮아, 다시 해보자! 코인 ${reward}개를 받았어.`);
+      const answer = answerFeedback(finishedRound);
+      setMessage(answer ? `정답은 ${answer.show}! 코인 ${reward}개를 받았어.` : `괜찮아, 다시 해보자! 코인 ${reward}개를 받았어.`);
     }
     if (settingsRef.current.praiseVoice) {
-      const answer = answerNumber(finishedRound);
-      const line = correct ? word : answer ? `정답은 ${josa(sinoWord(answer), "이야", "야")}` : "괜찮아, 다시 해보자!";
+      const answer = answerFeedback(finishedRound);
+      const line = correct ? word : answer ? `정답은 ${josa(answer.say, "이야", "야")}` : "괜찮아, 다시 해보자!";
       schedule(() => say(line), correct ? 250 : 350);
     }
     setMood({ id: Date.now(), type: correct ? "happy" : "oops" });
@@ -431,7 +517,7 @@ export default function App() {
     if (leveledUp) {
       schedule(() => {
         sfx.levelUp();
-        setLevelUp(leveledUp);
+        setLevelUp({ ...leveledUp, track });
         setMessage(`${leveledUp.id}단계 ${leveledUp.name}에 올랐어!`);
         if (settingsRef.current.praiseVoice) say(`레벨 업! ${leveledUp.name} 단계가 열렸어요!`);
       }, 1500);
@@ -444,6 +530,12 @@ export default function App() {
     sfx.tap();
     setLevelUp(null);
     if (activeGame) startGame(activeGame.id, { fresh: false });
+  }
+
+  function finishTrace() {
+    if (!round || round.gameId !== "h-trace" || round.feedback) return;
+    setRound({ ...round, feedback: { correct: true } });
+    finishRound(true, round);
   }
 
   function chooseAnswer(value) {
@@ -720,11 +812,12 @@ export default function App() {
           {screen === "home" && (
             <Home
               profile={profile}
-              games={gameCards}
+              subject={subject}
+              onSubject={pickSubject}
               onStart={startGame}
               onShop={openShop}
               onGift={claimDailyReward}
-              onPickLevel={pickLevel}
+              onPickLevel={(levelId) => pickLevel(subject, levelId)}
             />
           )}
 
@@ -732,7 +825,7 @@ export default function App() {
             <GameScreen
               game={activeGame}
               round={round}
-              level={levels[round.level - 1] ?? playLevel}
+              level={tracks[trackOf(round.gameId)].levels[round.level - 1]}
               reward={activeGame.reward + ((round.level ?? 1) - 1) * 2}
               speaking={speaking}
               onBack={goHome}
@@ -742,6 +835,7 @@ export default function App() {
               onOrder={chooseOrder}
               onMemory={chooseMemory}
               onBalloon={popBalloon}
+              onTraced={finishTrace}
             />
           )}
 
@@ -935,24 +1029,42 @@ function Character({ equippedItems, message, roomItem, progress, mood }) {
   );
 }
 
-function Home({ profile, games, onStart, onShop, onGift, onPickLevel }) {
-  const { level: unlocked, playLevel, levelStars } = profile.progress;
-  const current = levels[playLevel - 1];
-  const top = levels[unlocked - 1];
-  const maxed = unlocked >= levels.length;
+function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLevel }) {
+  const track = tracks[subject];
+  const { level: unlocked, playLevel, levelStars } = trackState(profile.progress, subject);
+  const trackLevels = track.levels;
+  const current = trackLevels[playLevel - 1];
+  const top = trackLevels[unlocked - 1];
+  const maxed = unlocked >= trackLevels.length;
   const percent = maxed ? 100 : Math.round((levelStars / top.goal) * 100);
   const giftTaken = profile.lastRewardDate === todayKey();
+  const titleWord = subject === "hangul" ? "한글" : "숫자";
 
   return (
-    <div className="home-grid">
-      <section className="home-hero enter" style={{ "--i": 0 }}>
+    <div className={`home-grid subject-${subject}`}>
+      <div className="subject-tabs enter" style={{ "--i": 0 }} role="tablist" aria-label="놀이 고르기">
+        {Object.entries(tracks).map(([id, info]) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={subject === id}
+            className={`subject-tab subject-tab-${id} ${subject === id ? "active" : ""}`}
+            onClick={() => onSubject(id)}
+          >
+            <span className="subject-glyph" aria-hidden="true">{id === "hangul" ? "가나" : "123"}</span>
+            {info.label}
+          </button>
+        ))}
+      </div>
+
+      <section className="home-hero enter" style={{ "--i": 1 }} key={`hero-${subject}`}>
         <div className="hero-copy">
           <p className="eyebrow">
             <span className={`level-pill level-${current.id}`}>{current.id}단계 {current.name}</span>
-            1부터 {current.max}까지
+            {subject === "numbers" ? track.rangeText(current) : current.perk}
           </p>
           <h1>
-            오늘의 <span className="rainbow-word">{"숫자".split("").map((char, index) => <span key={index}>{char}</span>)}</span> 놀이
+            오늘의 <span className="rainbow-word">{titleWord.split("").map((char, index) => <span key={index}>{char}</span>)}</span> 놀이
           </h1>
         </div>
         <div className="summary-actions">
@@ -971,11 +1083,11 @@ function Home({ profile, games, onStart, onShop, onGift, onPickLevel }) {
         </div>
       </section>
 
-      <section className="level-panel enter" style={{ "--i": 1 }} aria-label="단계">
+      <section className="level-panel enter" style={{ "--i": 2 }} aria-label="단계" key={`level-${subject}`}>
         <div className="level-progress">
           <div className="level-progress-head">
             <strong>
-              {maxed ? "모든 단계를 열었어요!" : `${top.id + 1}단계 ${levels[top.id].name}까지`}
+              {maxed ? "모든 단계를 열었어요!" : `${top.id + 1}단계 ${trackLevels[top.id].name}까지`}
             </strong>
             {!maxed && (
               <span className="star-count">
@@ -992,7 +1104,7 @@ function Home({ profile, games, onStart, onShop, onGift, onPickLevel }) {
           )}
         </div>
         <div className="level-chips" role="radiogroup" aria-label="단계 고르기">
-          {levels.map((level) => {
+          {trackLevels.map((level) => {
             const open = level.id <= unlocked;
             const active = level.id === playLevel;
             return (
@@ -1014,14 +1126,14 @@ function Home({ profile, games, onStart, onShop, onGift, onPickLevel }) {
         </div>
       </section>
 
-      <section className="game-grid" aria-label="게임 목록">
-        {games.map((game, index) => {
+      <section className={`game-grid games-${track.games.length}`} aria-label="게임 목록" key={`games-${subject}`}>
+        {track.games.map((game, index) => {
           const Art = game.art ? gameArt[game.art] : null;
           return (
             <button
               key={game.id}
               className={`game-card ${game.color} enter`}
-              style={{ "--i": index + 2 }}
+              style={{ "--i": index + 3 }}
               onClick={() => onStart(game.id)}
             >
               <span className="game-art">
