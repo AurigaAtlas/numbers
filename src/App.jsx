@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gameCards, hangulGameCards, levels, praise, shopCategories, shopItems } from "./data";
+import { Dex, dexOpenLine, dexSpeech } from "./Dex";
 import { GameScreen } from "./games";
 import {
   BackIcon,
   BagIcon,
   BalloonArt,
+  BookIcon,
   CheckIcon,
   CloudShape,
   CoinIcon,
@@ -27,7 +29,9 @@ import {
   TrophyIcon
 } from "./icons";
 import { bump, centerOf, flyCoins, prefersReducedMotion, viewportCenter } from "./motion";
-import { hangulAnswerSpeech, hangulLevels, hangulPrompt, makeHangulRound } from "./hangul";
+import { hangulAnswerSpeech, hangulLevels, hangulPrompt, makeHangulRound, spokenForm } from "./hangul";
+import { MISSION_REWARD, applyMissionEvent, ensureDaily, itemKey, missionsDone, recordResult } from "./learning";
+import { MissionPanel } from "./Missions";
 import { LevelUpOverlay, SettingsSheet } from "./overlays";
 import { countingWord, josa, makeRound, numberJosa, sinoWord } from "./rounds";
 import { sfx } from "./sfx";
@@ -60,7 +64,9 @@ const defaultState = {
     streak: 0,
     bestStreak: 0
   },
-  lastRewardDate: null
+  lastRewardDate: null,
+  mastery: {},
+  daily: null
 };
 
 const defaultSettings = {
@@ -159,7 +165,9 @@ function normalizeState(rawState) {
       ...defaultState.equipped,
       ...rawState?.equipped
     },
-    progress: normalizeProgress(rawState?.progress)
+    progress: normalizeProgress(rawState?.progress),
+    mastery: rawState?.mastery ?? {},
+    daily: ensureDaily(rawState?.daily, todayKey())
   };
 }
 
@@ -421,7 +429,8 @@ export default function App() {
     const game = allGames.find((card) => card.id === gameId);
     const track = trackOf(gameId);
     const level = tracks[track].levels[trackState(profileRef.current.progress, track).playLevel - 1];
-    const nextRound = track === "hangul" ? makeHangulRound(gameId, level) : makeRound(gameId, level);
+    const mastery = profileRef.current.mastery;
+    const nextRound = track === "hangul" ? makeHangulRound(gameId, level, mastery) : makeRound(gameId, level, mastery);
     setActiveGame(game);
     setRound(nextRound);
     setScreen("game");
@@ -454,26 +463,31 @@ export default function App() {
     setMessage(next === "hangul" ? "가나다! 한글이랑 놀아볼까?" : "하나 둘 셋! 숫자랑 놀아볼까?");
   }
 
-  function triggerCelebration(reward) {
+  function triggerCelebration(reward, word = randomPraise()) {
     const id = Date.now();
-    setCelebration({ id, reward, word: randomPraise() });
+    setCelebration({ id, reward, word });
     schedule(() => {
       setCelebration((current) => (current?.id === id ? null : current));
     }, 1500);
   }
 
-  function finishRound(correct, finishedRound) {
+  function finishRound(correct, finishedRound, { secondTry = false } = {}) {
     const game = allGames.find((card) => card.id === finishedRound.gameId);
     const track = trackOf(finishedRound.gameId);
     const trackLevels = tracks[track].levels;
     const current = profileRef.current.progress;
     const state = trackState(current, track);
     const level = trackLevels[state.playLevel - 1];
-    const reward = correct ? game.reward + (level.id - 1) * 2 : 4;
+    const firstTry = correct && !secondTry;
+    const fullReward = game.reward + (level.id - 1) * 2;
+    // A streak only grows on first-try answers; fixing a mistake keeps it as it was.
+    const streak = firstTry ? current.streak + 1 : correct ? current.streak : 0;
+    const combo = firstTry && streak >= 3 && streak % 3 === 0;
+    const reward = (correct ? (secondTry ? Math.ceil(fullReward / 2) : fullReward) : 4) + (combo ? 5 : 0);
 
     let { level: unlocked, playLevel: nextPlayLevel, levelStars } = state;
     let leveledUp = null;
-    if (correct && state.playLevel === unlocked && unlocked < trackLevels.length) {
+    if (firstTry && state.playLevel === unlocked && unlocked < trackLevels.length) {
       levelStars += 1;
       if (levelStars >= trackLevels[unlocked - 1].goal) {
         unlocked += 1;
@@ -482,7 +496,6 @@ export default function App() {
         leveledUp = trackLevels[unlocked - 1];
       }
     }
-    const streak = correct ? current.streak + 1 : 0;
     const nextProgress = {
       ...withTrackState(current, track, { level: unlocked, playLevel: nextPlayLevel, levelStars }),
       playedRounds: current.playedRounds + 1,
@@ -491,11 +504,13 @@ export default function App() {
       bestStreak: Math.max(current.bestStreak, streak)
     };
 
-    const word = randomPraise();
+    const word = combo ? `${streak}연속!` : secondTry ? "다시 해서 맞혔어!" : randomPraise();
     if (correct) {
       sfx.correct();
-      triggerCelebration(reward);
-      setMessage(`${word} 코인 ${reward}개를 받았어.`);
+      triggerCelebration(reward, word);
+      setMessage(combo
+        ? `${streak}번 연속 정답! 보너스까지 코인 ${reward}개!`
+        : `${word} 코인 ${reward}개를 받았어.`);
     } else {
       sfx.wrong();
       const answer = answerFeedback(finishedRound);
@@ -503,14 +518,29 @@ export default function App() {
     }
     if (settingsRef.current.praiseVoice) {
       const answer = answerFeedback(finishedRound);
-      const line = correct ? word : answer ? `정답은 ${josa(answer.say, "이야", "야")}` : "괜찮아, 다시 해보자!";
+      const line = correct
+        ? combo ? `우와, ${streak}번 연속이야!` : secondTry ? "맞았어! 잘했어!" : word
+        : answer ? `정답은 ${josa(answer.say, "이야", "야")}` : "괜찮아, 다시 해보자!";
       schedule(() => say(line), correct ? 250 : 350);
     }
     setMood({ id: Date.now(), type: correct ? "happy" : "oops" });
+    const latestProfile = profileRef.current;
+    const daily = applyMissionEvent(ensureDaily(latestProfile.daily, todayKey()), {
+      gameId: finishedRound.gameId,
+      track,
+      correct,
+      streak
+    });
+    if (missionsDone(daily) && !missionsDone(ensureDaily(latestProfile.daily, todayKey())) && !daily.claimed) {
+      schedule(() => showToast("오늘의 미션 완료! 보물상자를 열어봐", "success"), 1200);
+    }
+    const mastery = recordResult(latestProfile.mastery, itemKey(finishedRound), firstTry);
     updateProfile((latest) => ({
       ...latest,
       coins: latest.coins + reward,
-      progress: nextProgress
+      progress: nextProgress,
+      mastery,
+      daily
     }));
     schedule(() => coinsToWallet(viewportCenter(), correct ? 6 : 3), correct ? 420 : 500);
 
@@ -538,11 +568,69 @@ export default function App() {
     finishRound(true, round);
   }
 
+  // Hints after a first mistake: replay the question, count together, or slow down.
+  function giveHint(target) {
+    switch (target.gameId) {
+      case "find":
+      case "h-listen":
+        setMessage("다시 잘 들어봐!");
+        schedule(() => speakPrompt(target), 450);
+        break;
+      case "count":
+        setMessage("같이 세어보자!");
+        setRound((current) => (current?.id === target.id ? { ...current, tapped: [] } : current));
+        for (let index = 0; index < target.count; index += 1) {
+          schedule(() => {
+            setRound((current) => (
+              current?.id === target.id && !current.feedback
+                ? { ...current, tapped: [...current.tapped.filter((i) => i !== index), index] }
+                : current
+            ));
+            sfx.count(Math.min(index + 1, 12));
+            say(countingWord(index + 1), { rate: "fast" });
+          }, 450 + index * 650);
+        }
+        break;
+      case "add":
+        setMessage("그림을 하나씩 세어보자!");
+        say("그림을 하나씩 세어볼까?");
+        break;
+      case "missing": {
+        const step = target.sequence[1] - target.sequence[0];
+        const text = `${Math.abs(step)}씩 ${step > 0 ? "커지고" : "작아지고"} 있어!`;
+        setMessage(text);
+        say(text);
+        break;
+      }
+      case "h-picture":
+        setMessage(`${target.entry.word}, 천천히 읽어볼까?`);
+        say(target.entry.word.split("").join(", "), { rate: "slow" });
+        break;
+      case "h-build":
+        setMessage("두 친구를 천천히 합쳐봐!");
+        say(`${spokenForm(target.consonant)}, ${spokenForm(target.vowel)}`, { rate: "slow" });
+        break;
+      default:
+        setMessage("한 번 더 해보자!");
+    }
+  }
+
   function chooseAnswer(value) {
-    if (!round || round.feedback) return;
+    if (!round || round.feedback || round.eliminated?.includes(value)) return;
     const correct = value === round.answer;
+    // First mistake: take that choice (and one more wrong one) away and give a hint.
+    if (!correct && !round.retried && (round.options?.length ?? 0) >= 3) {
+      const others = round.options.filter((option) => option !== value && option !== round.answer);
+      const extra = round.options.length >= 4 && others.length ? [others[Math.floor(Math.random() * others.length)]] : [];
+      const next = { ...round, retried: true, hint: true, lastWrong: value, eliminated: [value, ...extra] };
+      setRound(next);
+      sfx.wrong();
+      setMood({ id: Date.now(), type: "oops" });
+      giveHint(next);
+      return;
+    }
     setRound({ ...round, feedback: { picked: value, correct } });
-    finishRound(correct, round);
+    finishRound(correct, round, { secondTry: Boolean(round.retried) });
   }
 
   function tapCountObject(index) {
@@ -560,6 +648,14 @@ export default function App() {
     if (!round || round.gameId !== "order" || round.feedback) return;
     if (round.selected.includes(value)) return;
     if (value !== round.next) {
+      if (!round.retried) {
+        setRound({ ...round, retried: true, lastWrong: value });
+        sfx.wrong();
+        setMood({ id: Date.now(), type: "oops" });
+        setMessage(`앗, ${value}보다 ${numberJosa(round.next, "을", "를")} 먼저 찾아봐!`);
+        say(`${josa(sinoWord(round.next), "을", "를")} 찾아봐`);
+        return;
+      }
       setRound({ ...round, feedback: { picked: value, correct: false } });
       finishRound(false, round);
       return;
@@ -567,11 +663,11 @@ export default function App() {
     const selected = [...round.selected, value];
     sfx.count(Math.min(selected.length, 12));
     if (value === round.answer) {
-      setRound({ ...round, selected, feedback: { picked: value, correct: true } });
-      finishRound(true, round);
+      setRound({ ...round, selected, lastWrong: null, feedback: { picked: value, correct: true } });
+      finishRound(true, round, { secondTry: Boolean(round.retried) });
       return;
     }
-    setRound({ ...round, selected, next: value + 1 });
+    setRound({ ...round, selected, lastWrong: null, next: value + 1 });
     setMessage(`${value} 다음은 ${value + 1}!`);
   }
 
@@ -649,6 +745,39 @@ export default function App() {
     }
     setRound({ ...round, popped, wrong: null });
     setMessage(`펑! ${round.goal - popped.length}개 더 찾아봐.`);
+  }
+
+  function openDex() {
+    sfx.tap();
+    clearTimers();
+    setScreen("dex");
+    setMessage(subject === "hangul" ? "글자 카드를 눌러서 들어봐!" : "숫자 카드를 눌러서 들어봐!");
+  }
+
+  function openDexEntry(value) {
+    sfx.pop();
+    setMessage(dexOpenLine(value));
+    say(dexSpeech(value));
+    updateProfile((current) => ({
+      ...current,
+      daily: applyMissionEvent(ensureDaily(current.daily, todayKey()), { dex: true })
+    }));
+  }
+
+  function claimMissions(element) {
+    const daily = ensureDaily(profile.daily, todayKey());
+    if (!missionsDone(daily) || daily.claimed) return;
+    updateProfile((current) => ({
+      ...current,
+      coins: current.coins + MISSION_REWARD,
+      daily: { ...ensureDaily(current.daily, todayKey()), claimed: true }
+    }));
+    sfx.levelUp();
+    triggerCelebration(MISSION_REWARD, "보물상자!");
+    setMood({ id: Date.now(), type: "happy" });
+    coinsToWallet(centerOf(element), 10);
+    setMessage(`오늘의 미션을 다 했어! 코인 ${MISSION_REWARD}개!`);
+    if (settingsRef.current.praiseVoice) say("미션 성공! 보물상자를 열었어요!");
   }
 
   function buyOrEquip(item, element) {
@@ -818,6 +947,8 @@ export default function App() {
               onShop={openShop}
               onGift={claimDailyReward}
               onPickLevel={(levelId) => pickLevel(subject, levelId)}
+              onDex={openDex}
+              onClaimMissions={claimMissions}
             />
           )}
 
@@ -836,6 +967,20 @@ export default function App() {
               onMemory={chooseMemory}
               onBalloon={popBalloon}
               onTraced={finishTrace}
+            />
+          )}
+
+          {screen === "dex" && (
+            <Dex
+              subject={subject}
+              onSubject={(next) => {
+                sfx.tap();
+                setSubject(next);
+              }}
+              mastery={profile.mastery}
+              onBack={goHome}
+              onOpen={openDexEntry}
+              onSay={(text, rate) => say(text, { rate })}
             />
           )}
 
@@ -930,7 +1075,7 @@ function Celebration({ reward, word }) {
       <div className="celebration-pop">
         <StarShape className="pop-star pop-star-a" />
         <StarShape className="pop-star pop-star-b" />
-        <span className="pop-word">{word}</span>
+        <span className={`pop-word ${word.length > 5 ? "is-long" : ""}`}>{word}</span>
         <strong className="pop-reward">
           <CoinIcon />+{reward}
         </strong>
@@ -1029,7 +1174,7 @@ function Character({ equippedItems, message, roomItem, progress, mood }) {
   );
 }
 
-function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLevel }) {
+function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLevel, onDex, onClaimMissions }) {
   const track = tracks[subject];
   const { level: unlocked, playLevel, levelStars } = trackState(profile.progress, subject);
   const trackLevels = track.levels;
@@ -1074,7 +1219,11 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
             disabled={giftTaken}
           >
             <GiftIcon />
-            {giftTaken ? "내일 또 만나요" : "오늘의 선물"}
+            {giftTaken ? "내일 또!" : "선물"}
+          </button>
+          <button className="chunky-button dex-button" onClick={onDex}>
+            <BookIcon />
+            도감
           </button>
           <button className="chunky-button shop-button" onClick={onShop}>
             <BagIcon />
@@ -1083,7 +1232,9 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
         </div>
       </section>
 
-      <section className="level-panel enter" style={{ "--i": 2 }} aria-label="단계" key={`level-${subject}`}>
+      <MissionPanel daily={ensureDaily(profile.daily, todayKey())} onClaim={onClaimMissions} />
+
+      <section className="level-panel enter" style={{ "--i": 3 }} aria-label="단계" key={`level-${subject}`}>
         <div className="level-progress">
           <div className="level-progress-head">
             <strong>
@@ -1133,7 +1284,7 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
             <button
               key={game.id}
               className={`game-card ${game.color} enter`}
-              style={{ "--i": index + 3 }}
+              style={{ "--i": index + 4 }}
               onClick={() => onStart(game.id)}
             >
               <span className="game-art">

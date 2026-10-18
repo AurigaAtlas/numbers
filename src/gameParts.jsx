@@ -2,7 +2,11 @@ import { SpeakerIcon } from "./icons";
 
 export function tileState(value, round, answer) {
   const feedback = round.feedback;
-  if (!feedback) return "";
+  if (!feedback) {
+    // After a first mistake the wrong pick (and one more) are crossed out.
+    if (round.eliminated?.includes(value)) return value === round.lastWrong ? "is-out is-wrong-try" : "is-out";
+    return "";
+  }
   if (value === feedback.picked) return feedback.correct ? "is-correct" : "is-wrong";
   if (!feedback.correct && value === answer) return "is-answer";
   return "is-dim";

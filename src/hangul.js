@@ -1,3 +1,4 @@
+import { pickWeighted } from "./learning";
 import { josa, shuffle } from "./rounds";
 
 export const CONSONANTS = "ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ".split("");
@@ -153,20 +154,22 @@ function wordsFor(level) {
   return words.filter((entry) => level.consonants.includes(initialOf(entry.word)));
 }
 
-export function makeHangulRound(gameId, level) {
+export function makeHangulRound(gameId, level, mastery = {}) {
+  const koKey = (text) => `ko:${text}`;
+  const weighted = (pool) => pickWeighted(pool, koKey, mastery);
   const base = { id: `${Date.now()}-${Math.random()}`, gameId, level: level.id, feedback: null };
 
   if (gameId === "h-listen") {
     if (level.listen === "consonant") {
-      const answer = pick(level.consonants);
+      const answer = weighted(level.consonants);
       return { ...base, mode: "jamo", answer, options: withDistractors(answer, level.consonants, level.options) };
     }
     if (level.listen === "vowel") {
-      const answer = pick(VOWELS);
+      const answer = weighted(VOWELS);
       return { ...base, mode: "jamo", answer, options: withDistractors(answer, VOWELS, level.options) };
     }
     if (level.listen === "syllable") {
-      const consonant = pick(level.consonants);
+      const consonant = weighted(level.consonants);
       const vowel = pick(BASIC_VOWELS);
       const answer = compose(consonant, vowel);
       return { ...base, mode: "syllable", answer, options: withDistractors(answer, similarSyllables(consonant, vowel, level), level.options) };
@@ -177,7 +180,10 @@ export function makeHangulRound(gameId, level) {
 
   if (gameId === "h-picture") {
     const pool = wordsFor(level);
-    const entry = pick(pool);
+    // Pick the starting consonant first so weak consonants come up more often.
+    const initials = [...new Set(pool.map((w) => initialOf(w.word)))];
+    const initial = level.picture === "initial" ? weighted(initials) : pick(initials);
+    const entry = pick(pool.filter((w) => initialOf(w.word) === initial));
     if (level.picture === "initial") {
       const answer = initialOf(entry.word);
       return { ...base, mode: "initial", entry, answer, options: withDistractors(answer, level.consonants, level.options) };
@@ -196,7 +202,7 @@ export function makeHangulRound(gameId, level) {
   }
 
   if (gameId === "h-build") {
-    const consonant = pick(level.consonants);
+    const consonant = weighted(level.consonants);
     const vowel = pick(level.buildVowels);
     const answer = compose(consonant, vowel);
     return {
@@ -210,8 +216,8 @@ export function makeHangulRound(gameId, level) {
 
   if (gameId === "h-trace") {
     let target;
-    if (level.trace === "consonant") target = pick(level.consonants);
-    else if (level.trace === "vowel") target = pick(VOWELS);
+    if (level.trace === "consonant") target = weighted(level.consonants);
+    else if (level.trace === "vowel") target = weighted(VOWELS);
     else if (level.trace === "syllable") target = compose(pick(level.consonants), pick(BASIC_VOWELS));
     else target = pick(words).word[0];
     return { ...base, target, example: exampleWord(target) ?? words.find((w) => w.word[0] === target) ?? null };

@@ -1,4 +1,5 @@
 import { countObjects } from "./data";
+import { pickWeighted } from "./learning";
 
 const sinoDigits = ["", "일", "이", "삼", "사", "오", "육", "칠", "팔", "구"];
 const nativeOnes = ["", "하나", "둘", "셋", "넷", "다섯", "여섯", "일곱", "여덟", "아홉"];
@@ -75,17 +76,19 @@ function twoObjects() {
   return [first, second];
 }
 
-export function makeRound(gameId, level) {
+export function makeRound(gameId, level, mastery = {}) {
   const base = { id: `${Date.now()}-${Math.random()}`, gameId, level: level.id, feedback: null };
   const { max } = level;
 
+  const numKey = (n) => `num:${n}`;
+
   if (gameId === "find") {
-    const answer = randInt(1, max);
+    const answer = pickWeighted(range(1, max), numKey, mastery);
     return { ...base, answer, options: makeOptions(answer, 1, max, level.options) };
   }
 
   if (gameId === "count") {
-    const answer = randInt(1, level.countMax);
+    const answer = pickWeighted(range(1, level.countMax), numKey, mastery);
     return {
       ...base,
       answer,
@@ -190,7 +193,7 @@ export function makeRound(gameId, level) {
   }
 
   if (gameId === "balloon") {
-    const target = randInt(1, max);
+    const target = pickWeighted(range(1, max), numKey, mastery);
     const { goal, duration } = level.balloon;
     const poolSize = 9;
     const others = range(1, max).filter((n) => n !== target);
