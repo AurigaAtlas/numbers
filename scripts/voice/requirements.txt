@@ -1,0 +1,5 @@
+# Python 3.10 recommended (MeloTTS pins torch<2.0). The CPU build of PyTorch is enough.
+--extra-index-url https://download.pytorch.org/whl/cpu
+git+https://github.com/myshell-ai/MeloTTS.git
+lameenc>=1.7
+numpy

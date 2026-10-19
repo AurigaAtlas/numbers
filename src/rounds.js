@@ -21,6 +21,15 @@ export function countingWord(number) {
   return nativeOnes[number] ?? String(number);
 }
 
+// Native number before a counter word: 한 개, 두 칸, 세 번, 스무 개, 스물다섯 개.
+const nativeUnits = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉"];
+const nativeTens = ["", "열", "스물", "서른", "마흔", "쉰", "예순", "일흔", "여든", "아흔"];
+export function nativeCount(number) {
+  if (number === 20) return "스무";
+  if (number <= 0 || number >= 100) return sinoWord(number);
+  return `${nativeTens[Math.floor(number / 10)]}${nativeUnits[number % 10]}`;
+}
+
 // Picks 을/를 (or 이/가, 은/는 …) from whether the last Hangul syllable has a final consonant.
 export function josa(word, withFinal, withoutFinal) {
   const code = word.charCodeAt(word.length - 1) - 0xac00;

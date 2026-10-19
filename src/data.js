@@ -11,7 +11,7 @@ export const shopItems = [
     name: "공주 놀이방",
     price: 0,
     rarity: "기본",
-    image: "./assets/generated-princess-room.png",
+    image: "./assets/generated-princess-room.webp",
     description: "새로 만든 따뜻한 공주방"
   },
   {
@@ -20,7 +20,7 @@ export const shopItems = [
     name: "성 안뜰",
     price: 10,
     rarity: "희귀",
-    image: "./assets/generated-castle-courtyard.png",
+    image: "./assets/generated-castle-courtyard.webp",
     description: "새로 만든 햇살 가득한 성 안뜰"
   },
   {
@@ -29,7 +29,7 @@ export const shopItems = [
     name: "꽃 정원",
     price: 7,
     rarity: "고급",
-    image: "./assets/generated-flower-garden.png",
+    image: "./assets/generated-flower-garden.webp",
     description: "새로 만든 꽃과 정자 배경"
   },
   {
@@ -38,9 +38,9 @@ export const shopItems = [
     name: "분홍 원피스",
     price: 0,
     rarity: "기본",
-    image: "./assets/avatar-gen-pink-dress.png",
-    previewImage: "./assets/shop-pink-dress-generated.png",
-    avatarImage: "./assets/avatar-gen-pink-dress.png",
+    image: "./assets/avatar-gen-pink-dress.webp",
+    previewImage: "./assets/shop-pink-dress-generated.webp",
+    avatarImage: "./assets/avatar-gen-pink-dress.webp",
     description: "캐릭터 몸에 맞춰 만든 기본 드레스"
   },
   {
@@ -49,9 +49,9 @@ export const shopItems = [
     name: "무지개 드레스",
     price: 5,
     rarity: "고급",
-    image: "./assets/avatar-gen-rainbow-dress.png",
-    previewImage: "./assets/shop-rainbow-dress-v3.png",
-    avatarImage: "./assets/avatar-gen-rainbow-dress.png",
+    image: "./assets/avatar-gen-rainbow-dress.webp",
+    previewImage: "./assets/shop-rainbow-dress-v3.webp",
+    avatarImage: "./assets/avatar-gen-rainbow-dress.webp",
     description: "색깔이 반짝이는 드레스"
   },
   {
@@ -60,9 +60,9 @@ export const shopItems = [
     name: "공주 드레스",
     price: 8,
     rarity: "희귀",
-    image: "./assets/avatar-gen-princess-dress.png",
-    previewImage: "./assets/shop-princess-dress-v3.png",
-    avatarImage: "./assets/avatar-gen-princess-dress.png",
+    image: "./assets/avatar-gen-princess-dress.webp",
+    previewImage: "./assets/shop-princess-dress-v3.webp",
+    avatarImage: "./assets/avatar-gen-princess-dress.webp",
     description: "상점의 대표 공주 옷"
   },
   {
@@ -71,9 +71,9 @@ export const shopItems = [
     name: "왕실 드레스",
     price: 10,
     rarity: "전설",
-    image: "./assets/avatar-gen-royal-dress.png",
-    previewImage: "./assets/shop-royal-dress-v3.png",
-    avatarImage: "./assets/avatar-gen-royal-dress.png",
+    image: "./assets/avatar-gen-royal-dress.webp",
+    previewImage: "./assets/shop-royal-dress-v3.webp",
+    avatarImage: "./assets/avatar-gen-royal-dress.webp",
     description: "오래 모으면 살 수 있는 특별한 옷"
   },
   {
@@ -82,9 +82,9 @@ export const shopItems = [
     name: "햇살 모자",
     price: 3,
     rarity: "고급",
-    image: "./assets/avatar-gen-sun-hat.png",
-    previewImage: "./assets/shop-sun-hat-v3.png",
-    avatarImage: "./assets/avatar-gen-sun-hat.png",
+    image: "./assets/avatar-gen-sun-hat.webp",
+    previewImage: "./assets/shop-sun-hat-v3.webp",
+    avatarImage: "./assets/avatar-gen-sun-hat.webp",
     description: "노란 리본이 달린 모자"
   },
   {
@@ -93,9 +93,9 @@ export const shopItems = [
     name: "별 왕관",
     price: 6,
     rarity: "희귀",
-    image: "./assets/avatar-gen-star-crown.png",
-    previewImage: "./assets/shop-star-crown-v3.png",
-    avatarImage: "./assets/avatar-gen-star-crown.png",
+    image: "./assets/avatar-gen-star-crown.webp",
+    previewImage: "./assets/shop-star-crown-v3.webp",
+    avatarImage: "./assets/avatar-gen-star-crown.webp",
     description: "별이 달린 작은 왕관"
   },
   {
@@ -104,9 +104,9 @@ export const shopItems = [
     name: "꽃 티아라",
     price: 8,
     rarity: "희귀",
-    image: "./assets/avatar-gen-flower-tiara.png",
-    previewImage: "./assets/shop-flower-tiara-v3.png",
-    avatarImage: "./assets/avatar-gen-flower-tiara.png",
+    image: "./assets/avatar-gen-flower-tiara.webp",
+    previewImage: "./assets/shop-flower-tiara-v3.webp",
+    avatarImage: "./assets/avatar-gen-flower-tiara.webp",
     description: "꽃잎 장식 머리띠"
   },
   {
@@ -115,9 +115,9 @@ export const shopItems = [
     name: "하트 요술봉",
     price: 5,
     rarity: "고급",
-    image: "./assets/avatar-gen-heart-wand.png",
-    previewImage: "./assets/gen-heart-wand.png",
-    avatarImage: "./assets/avatar-gen-heart-wand.png",
+    image: "./assets/avatar-gen-heart-wand.webp",
+    previewImage: "./assets/gen-heart-wand.webp",
+    avatarImage: "./assets/avatar-gen-heart-wand.webp",
     description: "정답을 응원하는 요술봉"
   },
   {
@@ -126,9 +126,9 @@ export const shopItems = [
     name: "나비 날개",
     price: 10,
     rarity: "전설",
-    image: "./assets/avatar-gen-butterfly-wings.png",
-    previewImage: "./assets/shop-butterfly-wings-v3.png",
-    avatarImage: "./assets/avatar-gen-butterfly-wings.png",
+    image: "./assets/avatar-gen-butterfly-wings.webp",
+    previewImage: "./assets/shop-butterfly-wings-v3.webp",
+    avatarImage: "./assets/avatar-gen-butterfly-wings.webp",
     description: "캐릭터 뒤에 달리는 날개"
   },
   ...extraShopItems.filter(Boolean)
@@ -152,7 +152,7 @@ export const gameCards = [
     title: "숫자 찾기",
     subtitle: "목소리를 듣고 숫자를 골라요",
     intro: "잘 듣고 맞는 숫자를 눌러봐!",
-    image: "./assets/game-find.png",
+    image: "./assets/game-find.webp",
     color: "coral",
     reward: 9
   },
@@ -161,7 +161,7 @@ export const gameCards = [
     title: "몇 개일까",
     subtitle: "그림을 세고 숫자를 눌러요",
     intro: "그림을 하나씩 눌러서 세어봐!",
-    image: "./assets/game-count.png",
+    image: "./assets/game-count.webp",
     color: "mint",
     reward: 9
   },
@@ -170,7 +170,7 @@ export const gameCards = [
     title: "차례차례",
     subtitle: "작은 숫자부터 순서대로",
     intro: "작은 숫자부터 차례대로 눌러봐!",
-    image: "./assets/game-order.png",
+    image: "./assets/game-order.webp",
     color: "sky",
     reward: 10
   },
@@ -179,7 +179,7 @@ export const gameCards = [
     title: "카드 기억하기",
     subtitle: "같은 숫자 카드를 찾아요",
     intro: "카드를 뒤집어서 같은 숫자 짝을 찾아봐!",
-    image: "./assets/game-memory.png",
+    image: "./assets/game-memory.webp",
     color: "lilac",
     reward: 16
   },
@@ -301,9 +301,9 @@ export const levels = [
 ];
 
 export const countObjects = [
-  { name: "별", image: "./assets/object-star.png" },
-  { name: "사과", image: "./assets/object-apple.png" },
-  { name: "하트", image: "./assets/object-heart.png" }
+  { name: "별", image: "./assets/object-star.webp" },
+  { name: "사과", image: "./assets/object-apple.webp" },
+  { name: "하트", image: "./assets/object-heart.webp" }
 ];
 
 export const praise = ["잘했어!", "멋져!", "좋았어!", "정말 정확해!", "최고야!"];

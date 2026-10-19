@@ -3,7 +3,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { countStar, gameFind, shopItemArt } from "./items.mjs";
+import { appIcon, countStar, gameFind, shopItemArt } from "./items.mjs";
 import { roomArt } from "./rooms.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -48,9 +48,25 @@ async function renderAt(svgText, outPath, scale) {
   const size = svgText.match(/viewBox="0 0 (\d+) (\d+)"/);
   await scaledPage.setViewportSize({ width: Number(size[1]), height: Number(size[2]) });
   await scaledPage.setContent(`<html><body style="margin:0;background:transparent">${svgText}</body></html>`);
-  const buffer = await (await scaledPage.$("svg")).screenshot({ omitBackground: true });
+  const png = await (await scaledPage.$("svg")).screenshot({ omitBackground: true });
   mkdirSync(dirname(outPath), { recursive: true });
-  writeFileSync(outPath, buffer);
+  if (outPath.endsWith(".png")) {
+    writeFileSync(outPath, png);
+    await context.close();
+    return;
+  }
+  // Chromium encodes WebP itself, so no image library is needed.
+  const webp = await scaledPage.evaluate(async (src) => {
+    const image = new Image();
+    image.src = src;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    canvas.getContext("2d").drawImage(image, 0, 0);
+    return canvas.toDataURL("image/webp", 0.86).split(",")[1];
+  }, `data:image/png;base64,${png.toString("base64")}`);
+  writeFileSync(outPath, Buffer.from(webp, "base64"));
   await context.close();
 }
 
@@ -61,8 +77,8 @@ for (const [id, draw] of Object.entries(shopItemArt)) {
   if (!want(id)) continue;
   const svgText = draw();
   writeFileSync(join(root, "art", "svg", `${id}.svg`), svgText);
-  await renderAt(svgText, join(assets, "custom-shop-png", `${id}.png`), 1.5);
-  await renderAt(placeOnAvatar(svgText, avatarPlacement[id]), join(assets, "custom-shop-avatar", `${id}.png`), 2);
+  await renderAt(svgText, join(assets, "custom-shop-png", `${id}.webp`), 1.5);
+  await renderAt(placeOnAvatar(svgText, avatarPlacement[id]), join(assets, "custom-shop-avatar", `${id}.webp`), 2);
   console.log("item", id);
 }
 
@@ -70,17 +86,25 @@ for (const [id, draw] of Object.entries(roomArt)) {
   if (!want(id)) continue;
   const svgText = draw();
   writeFileSync(join(root, "art", "svg", `${id}.svg`), svgText);
-  await renderAt(svgText, join(assets, "custom-shop-png", `${id}.png`), 1);
+  await renderAt(svgText, join(assets, "custom-shop-png", `${id}.webp`), 1);
   console.log("room", id);
 }
 
 if (want("object-star")) {
   writeFileSync(join(root, "art", "svg", "object-star.svg"), countStar());
-  await renderAt(countStar(), join(assets, "object-star.png"), 1);
+  await renderAt(countStar(), join(assets, "object-star.webp"), 1);
 }
 if (want("game-find")) {
   writeFileSync(join(root, "art", "svg", "game-find.svg"), gameFind());
-  await renderAt(gameFind(), join(assets, "game-find.png"), 2);
+  await renderAt(gameFind(), join(assets, "game-find.webp"), 2);
+}
+
+if (want("app-icon")) {
+  writeFileSync(join(root, "art", "svg", "app-icon.svg"), appIcon());
+  // Home-screen icons stay PNG: iOS does not accept WebP there.
+  await renderAt(appIcon(), join(root, "public", "icon-512.png"), 1);
+  await renderAt(appIcon(), join(root, "public", "icon-192.png"), 0.375);
+  await renderAt(appIcon(), join(root, "public", "apple-touch-icon.png"), 0.3515625);
 }
 
 await browser.close();

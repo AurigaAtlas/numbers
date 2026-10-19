@@ -370,3 +370,35 @@ export const shopItemArt = {
   "ribbon-umbrella": ribbonUmbrella,
   "sparkle-shield": sparkleShield
 };
+
+// Home-screen icon: a smiling star over number beads, full-bleed so it also works as a maskable icon.
+export function appIcon() {
+  const beads = [["#ff8fab", 156], ["#7cc6ff", 256], ["#8ee08a", 356]]
+    .map(([color, x]) => `
+      <circle cx="${x}" cy="400" r="34" fill="${color}"/>
+      <circle cx="${x - 10}" cy="388" r="10" fill="#fff" opacity="0.55"/>`)
+    .join("");
+  return svg(512, 512, `
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#ffd3e2"/>
+        <stop offset="1" stop-color="#ffe9b8"/>
+      </linearGradient>
+      ${gold("star")}
+    </defs>
+    <rect width="512" height="512" fill="url(#bg)"/>
+    <circle cx="256" cy="230" r="150" fill="#fff" opacity="0.5"/>
+    <rect x="110" y="392" width="292" height="16" rx="8" fill="#c98a6a" opacity="0.35"/>
+    ${beads}
+    <path d="${starPath(256, 222, 132, 62)}" fill="url(#star)" stroke="#e0a21c" stroke-width="10" stroke-linejoin="round"/>
+    <circle cx="222" cy="220" r="12" fill="#5a3a5e"/>
+    <circle cx="290" cy="220" r="12" fill="#5a3a5e"/>
+    <circle cx="226" cy="215" r="4" fill="#fff"/>
+    <circle cx="294" cy="215" r="4" fill="#fff"/>
+    <path d="M232 250 Q256 272 280 250" fill="none" stroke="#5a3a5e" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="200" cy="248" r="13" fill="#ff8fab" opacity="0.6"/>
+    <circle cx="312" cy="248" r="13" fill="#ff8fab" opacity="0.6"/>
+    ${sparkle(118, 120, 22)}
+    ${sparkle(400, 104, 16)}
+    ${sparkle(414, 300, 12, "#ffffff")}`);
+}

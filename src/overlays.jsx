@@ -1,6 +1,14 @@
 import { useEffect } from "react";
-import { CheckIcon, CrownIcon, ResetIcon, SpeakerIcon, StarShape } from "./icons";
+import { ChartIcon, CheckIcon, CrownIcon, ResetIcon, SpeakerIcon, StarShape } from "./icons";
 import { qualityLabel, useKoreanVoices } from "./voice";
+import { PACK_VOICE } from "./voicePack";
+
+const breakOptions = [
+  { minutes: 0, label: "끄기" },
+  { minutes: 15, label: "15분" },
+  { minutes: 20, label: "20분" },
+  { minutes: 30, label: "30분" }
+];
 
 const rateOptions = [
   { id: "slow", label: "천천히" },
@@ -21,9 +29,10 @@ function isApplePlatform() {
   return /iPad|iPhone|Macintosh/.test(navigator.userAgent);
 }
 
-export function SettingsSheet({ settings, onChange, onPreview, onReset, onClose }) {
+export function SettingsSheet({ settings, pack, onChange, onPreview, onReset, onReport, onClose }) {
   const voices = useKoreanVoices();
-  const selectedURI = settings.voiceURI ?? voices[0]?.voiceURI;
+  const packSelected = Boolean(pack) && (!settings.voiceURI || settings.voiceURI === PACK_VOICE);
+  const selectedURI = packSelected ? PACK_VOICE : settings.voiceURI ?? voices[0]?.voiceURI;
   const hasGreatVoice = voices.some((voice) => qualityLabel(voice) === "고음질");
 
   useEffect(() => {
@@ -50,8 +59,25 @@ export function SettingsSheet({ settings, onChange, onPreview, onReset, onClose 
 
         <div className="sheet-section">
           <h3>목소리</h3>
+          {pack && (
+            <button
+              className={`voice-option voice-pack-option ${packSelected ? "is-active" : ""}`}
+              onClick={() => {
+                onChange({ voiceURI: PACK_VOICE });
+                onPreview(PACK_VOICE);
+              }}
+            >
+              <span className="voice-radio">{packSelected && <CheckIcon />}</span>
+              <span className="voice-name">
+                숫자 놀이터 목소리
+                <small>어느 기기에서나 같은 목소리 · {pack.model}</small>
+              </span>
+              <span className="voice-quality q-great">녹음</span>
+              <span className="voice-play"><SpeakerIcon /></span>
+            </button>
+          )}
           {voices.length === 0 ? (
-            <p className="sheet-note">이 기기에서 한국어 목소리를 찾지 못했어요.</p>
+            !pack && <p className="sheet-note">이 기기에서 한국어 목소리를 찾지 못했어요.</p>
           ) : (
             <div className="voice-list">
               {voices.map((voice) => {
@@ -77,7 +103,7 @@ export function SettingsSheet({ settings, onChange, onPreview, onReset, onClose 
               })}
             </div>
           )}
-          {!hasGreatVoice && (
+          {!hasGreatVoice && !pack && (
             <div className="voice-tip">
               <strong>더 자연스러운 목소리 받기</strong>
               {isApplePlatform() ? (
@@ -137,6 +163,34 @@ export function SettingsSheet({ settings, onChange, onPreview, onReset, onClose 
             />
             <i className="switch" aria-hidden="true" />
           </label>
+        </div>
+
+        <div className="sheet-section">
+          <h3>부모님</h3>
+          <button className="report-row" onClick={onReport}>
+            <ChartIcon />
+            <span>
+              <strong>학습 리포트</strong>
+              <small>놀이 시간, 정답률, 더 연습할 숫자와 글자</small>
+            </span>
+          </button>
+          <div className="break-setting">
+            <span>
+              <strong>쉬는 시간 알림</strong>
+              <small>이만큼 놀면 3분 쉬어 가요</small>
+            </span>
+            <div className="segmented">
+              {breakOptions.map((option) => (
+                <button
+                  key={option.minutes}
+                  className={(settings.breakMinutes ?? 0) === option.minutes ? "active" : ""}
+                  onClick={() => onChange({ breakMinutes: option.minutes })}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="sheet-section">

@@ -1,5 +1,5 @@
-const customPngAsset = (id) => `./assets/custom-shop-png/${id}.png`;
-const customAvatarAsset = (id) => `./assets/custom-shop-avatar/${id}.png`;
+const customPngAsset = (id) => `./assets/custom-shop-png/${id}.webp`;
+const customAvatarAsset = (id) => `./assets/custom-shop-avatar/${id}.webp`;
 
 const availablePngItems = new Set([
   "candy-dress",
