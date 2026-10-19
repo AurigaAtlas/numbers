@@ -1,5 +1,26 @@
-const customPngAsset = (id) => `./assets/custom-shop-png/${id}.webp`;
-const customAvatarAsset = (id) => `./assets/custom-shop-avatar/${id}.webp`;
+const storybookItems = new Set([
+  "room-candy",
+  "room-winter",
+  "room-moon",
+  "room-ocean",
+  "room-picnic",
+  "room-rainbow",
+  "room-study",
+  "room-cloud",
+  "room-stage",
+  "room-treasure",
+  "cloud-cushion",
+  "flower-bouquet",
+  "gem-necklace",
+  "magic-book",
+  "moon-lantern",
+  "music-mic",
+  "ribbon-umbrella",
+  "sparkle-shield"
+]);
+const artFilename = (id) => storybookItems.has(id) ? `${id}-storybook-v1` : id;
+const customPngAsset = (id) => `./assets/custom-shop-png/${artFilename(id)}.webp`;
+const customAvatarAsset = (id) => `./assets/custom-shop-avatar/${artFilename(id)}.webp`;
 
 const availablePngItems = new Set([
   "candy-dress",

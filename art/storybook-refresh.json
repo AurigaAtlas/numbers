@@ -1,0 +1,161 @@
+{
+  "generator": "Built-in image_gen",
+  "style": "Hand-painted fairytale illustrations with dimensional materials; clear central floor for avatars; transparent isolated accessories",
+  "assets": [
+    {
+      "id": "room-candy",
+      "files": [
+        "public/assets/custom-shop-png/room-candy-storybook-v1.webp"
+      ],
+      "prompt": "Premium hand-painted fairytale storybook game background: a candy-colored princess playroom, peppermint columns, candy display shelves, frosting trim, pink round rug. Portrait 2:3. Clear central floor, no people or text."
+    },
+    {
+      "id": "room-winter",
+      "files": [
+        "public/assets/custom-shop-png/room-winter-storybook-v1.webp"
+      ],
+      "prompt": "Production background for a young children's princess learning game: a cozy winter room, snowy garden through arched window, fireplace, knitted rug, icy blue furnishings. Premium hand-painted fairytale storybook illustration, soft dimensional shading, ornate but gentle details, luminous pastel colors. Portrait 2:3, full bleed. Front-facing interior, clear generous lower central floor for standing avatar. No people, no text, no watermark."
+    },
+    {
+      "id": "room-moon",
+      "files": [
+        "public/assets/custom-shop-png/room-moon-storybook-v1.webp"
+      ],
+      "prompt": "Production background for a young children's princess learning game: a moonlit royal observatory room, crescent moon window, midnight velvet, gold stars, lavender rug. Premium hand-painted fairytale storybook illustration, soft dimensional shading, ornate but gentle details, luminous pastel colors. Portrait 2:3, full bleed. Front-facing interior, clear generous lower central floor for standing avatar. No people, no text, no watermark."
+    },
+    {
+      "id": "room-ocean",
+      "files": [
+        "public/assets/custom-shop-png/room-ocean-storybook-v1.webp"
+      ],
+      "prompt": "Production background for a young children's princess learning game: an underwater princess room, coral ornaments, seashell furnishings, ocean window, turquoise and gold. Premium hand-painted fairytale storybook illustration, soft dimensional shading, ornate but gentle details, luminous pastel colors. Portrait 2:3, full bleed. Front-facing interior, clear generous lower central floor for standing avatar. No people, no text, no watermark."
+    },
+    {
+      "id": "room-picnic",
+      "files": [
+        "public/assets/custom-shop-png/room-picnic-storybook-v1.webp"
+      ],
+      "prompt": "Production background for a young children's princess learning game: a sunny garden picnic clearing, gingham picnic blanket, basket, flowers, soft trees. Premium hand-painted fairytale storybook illustration, soft dimensional shading, ornate but gentle details, luminous pastel colors. Portrait 2:3, full bleed. Front-facing scene, clear generous lower central floor or lawn for standing avatar. No people, no text, no watermark."
+    },
+    {
+      "id": "room-rainbow",
+      "files": [
+        "public/assets/custom-shop-png/room-rainbow-storybook-v1.webp"
+      ],
+      "prompt": "Production background for a young children's princess learning game: a rainbow princess room, rainbow arch window, pastel curtains, iridescent details, circular rug. Premium hand-painted fairytale storybook illustration, soft dimensional shading, ornate but gentle details, luminous pastel colors. Portrait 2:3, full bleed. Front-facing scene, clear generous lower central floor or lawn for standing avatar. No people, no text, no watermark."
+    },
+    {
+      "id": "room-study",
+      "files": [
+        "public/assets/custom-shop-png/room-study-storybook-v1.webp"
+      ],
+      "prompt": "Production background for a young children's princess learning game: a cozy children's magical study, curved bookshelf, arched window, open book, warm mint and cream. Premium hand-painted fairytale storybook illustration, soft dimensional shading, ornate but gentle details, luminous pastel colors. Portrait 2:3, full bleed. Front-facing scene, clear generous lower central floor or lawn for standing avatar. No people, no text, no watermark."
+    },
+    {
+      "id": "room-cloud",
+      "files": [
+        "public/assets/custom-shop-png/room-cloud-storybook-v1.webp"
+      ],
+      "prompt": "Production background for a young children's princess learning game: an airy cloud palace room, fluffy cloud furniture, sky window, floating star decorations, pale blue. Premium hand-painted fairytale storybook illustration, soft dimensional shading, ornate but gentle details, luminous pastel colors. Portrait 2:3, full bleed. Front-facing interior, clear generous lower central floor for standing avatar. No people, no text, no watermark."
+    },
+    {
+      "id": "room-stage",
+      "files": [
+        "public/assets/custom-shop-png/room-stage-storybook-v1.webp"
+      ],
+      "prompt": "Production background for a young children's princess learning game: a royal miniature theater stage, ruby velvet curtains, star lights, polished wooden floor, purple and gold. Premium hand-painted fairytale storybook illustration, soft dimensional shading, ornate but gentle details, luminous pastel colors. Portrait 2:3, full bleed. Front-facing interior, clear generous lower central floor for standing avatar. No people, no text, no watermark."
+    },
+    {
+      "id": "room-treasure",
+      "files": [
+        "public/assets/custom-shop-png/room-treasure-storybook-v1.webp"
+      ],
+      "prompt": "Production background for a young children's princess learning game: a golden royal treasure room, arched glowing doorway, ornate chest, scattered gems, crimson rug. Premium hand-painted fairytale storybook illustration, soft dimensional shading, ornate but gentle details, luminous pastel colors. Portrait 2:3, full bleed. Front-facing interior, clear generous lower central floor for standing avatar. No people, no text, no watermark."
+    },
+    {
+      "id": "cloud-cushion",
+      "files": [
+        "public/assets/custom-shop-png/cloud-cushion-storybook-v1.webp",
+        "public/assets/custom-shop-avatar/cloud-cushion-storybook-v1.webp"
+      ],
+      "prompt": "Single isolated inventory accessory for a children's princess dress-up game: a plush embroidered smiling cloud cushion, pale blue velvet piping, tiny gold tassels. Premium hand-painted fairytale item illustration, dimensional soft shading, exquisite materials matching ornate princess dresses, pastel colors, readable silhouette at thumbnail size. Square canvas, centered complete object with 10% clear margin, front view. Truly transparent background. No floor, no cast shadow, no person, no hands, no text, no watermark."
+    },
+    {
+      "id": "flower-bouquet",
+      "files": [
+        "public/assets/custom-shop-png/flower-bouquet-storybook-v1.webp",
+        "public/assets/custom-shop-avatar/flower-bouquet-storybook-v1.webp"
+      ],
+      "prompt": "Single isolated inventory accessory for a children's princess dress-up game: a lush small bouquet of pink roses and pastel flowers in pink ribbon-wrapped paper. Premium hand-painted fairytale item illustration, dimensional soft shading, exquisite materials matching ornate princess dresses, pastel colors, readable silhouette at thumbnail size. Square canvas, centered complete object with 10% clear margin, front view. Truly transparent background. No floor, no cast shadow, no person, no hands, no text, no watermark."
+    },
+    {
+      "id": "gem-necklace",
+      "files": [
+        "public/assets/custom-shop-png/gem-necklace-storybook-v1.webp",
+        "public/assets/custom-shop-avatar/gem-necklace-storybook-v1.webp"
+      ],
+      "prompt": "Single isolated inventory accessory for a children's princess dress-up game: a princess necklace with a large blue faceted gem pendant, intricate gold filigree and a complete pearl chain. Premium hand-painted fairytale item illustration, dimensional soft shading, exquisite materials matching ornate princess dresses, pastel colors, readable silhouette at thumbnail size. Square canvas, centered complete object with 10% clear margin, front view. Truly transparent background. No floor, no cast shadow, no person, no hands, no text, no watermark."
+    },
+    {
+      "id": "magic-book",
+      "files": [
+        "public/assets/custom-shop-png/magic-book-storybook-v1.webp",
+        "public/assets/custom-shop-avatar/magic-book-storybook-v1.webp"
+      ],
+      "prompt": "Single isolated inventory accessory for a children's princess dress-up game: an open magical storybook with lavender leather binding, ornate gold corners, gently glowing pages and a few small stars. Premium hand-painted fairytale item illustration, dimensional soft shading, exquisite materials matching ornate princess dresses, pastel colors, readable silhouette at thumbnail size. Square canvas, centered complete object with 10% clear margin, front view. Truly transparent background. No floor, no cast shadow, no person, no hands, no text, no watermark."
+    },
+    {
+      "id": "moon-lantern",
+      "files": [
+        "public/assets/custom-shop-png/moon-lantern-storybook-v1.webp",
+        "public/assets/custom-shop-avatar/moon-lantern-storybook-v1.webp"
+      ],
+      "prompt": "Single isolated inventory accessory for a children's princess dress-up game: an ornate golden handheld lantern with a crescent finial, warm glowing glass, intricate pierced metal and carrying loop. Premium hand-painted fairytale item illustration, dimensional soft shading, exquisite materials matching ornate princess dresses, pastel colors, readable silhouette at thumbnail size. Square canvas, centered complete object with 10% clear margin, front view. Truly transparent background. No floor, no cast shadow, no person, no hands, no text, no watermark."
+    },
+    {
+      "id": "music-mic",
+      "files": [
+        "public/assets/custom-shop-png/music-mic-storybook-v1.webp",
+        "public/assets/custom-shop-avatar/music-mic-storybook-v1.webp"
+      ],
+      "prompt": "Single isolated inventory accessory for a children's princess dress-up game: a pink pearl and gold princess handheld microphone, faceted pink grille, delicate bow, ornate gold trim. Premium hand-painted fairytale item illustration, dimensional soft shading, exquisite materials matching ornate princess dresses, pastel colors, readable silhouette at thumbnail size. Square canvas, centered complete object with 10% clear margin, front view. Truly transparent background. No floor, no cast shadow, no person, no hands, no text, no watermark."
+    },
+    {
+      "id": "ribbon-umbrella",
+      "files": [
+        "public/assets/custom-shop-png/ribbon-umbrella-storybook-v1.webp",
+        "public/assets/custom-shop-avatar/ribbon-umbrella-storybook-v1.webp"
+      ],
+      "prompt": "Single isolated inventory accessory for a children's princess dress-up game: an open pink princess parasol with scalloped lace, a purple ribbon bow, gold curved handle. Premium hand-painted fairytale item illustration, dimensional soft shading, exquisite materials matching ornate princess dresses, pastel colors, readable silhouette at thumbnail size. Square canvas, centered complete object with 10% clear margin, front view. Truly transparent background. No floor, no cast shadow, no person, no hands, no text, no watermark."
+    },
+    {
+      "id": "sparkle-shield",
+      "files": [
+        "public/assets/custom-shop-png/sparkle-shield-storybook-v1.webp",
+        "public/assets/custom-shop-avatar/sparkle-shield-storybook-v1.webp"
+      ],
+      "prompt": "Single isolated inventory accessory for a children's princess dress-up game: a small royal blue and gold shield with a faceted pink star centerpiece, delicate engraved filigree. Premium hand-painted fairytale item illustration, dimensional soft shading, exquisite materials matching ornate princess dresses, pastel colors, readable silhouette at thumbnail size. Square canvas, centered complete object with 10% clear margin, front view. Truly transparent background. No floor, no cast shadow, no person, no hands, no text, no watermark."
+    },
+    {
+      "id": "object-star",
+      "files": [
+        "public/assets/object-star-storybook-v1.webp"
+      ],
+      "prompt": "Single isolated learning game icon for a five-year-old child's number game: one friendly golden five-pointed star with a tiny smiling face, jewel-like soft dimensional shading. Premium hand-painted fairytale toy illustration, friendly rounded form, soft dimensional highlights, clear simple silhouette at 48 pixels. Square canvas, centered complete object with 12% empty margin. Truly transparent background. No floor or cast shadow, no additional objects except those specified, no person, no watermark. No text. For star: exactly five star points."
+    },
+    {
+      "id": "object-heart",
+      "files": [
+        "public/assets/object-heart-storybook-v1.webp"
+      ],
+      "prompt": "Single isolated learning game icon for a five-year-old child's number game: one pink heart-shaped polished candy gem, rounded dimensional form, bright soft highlights. Premium hand-painted fairytale toy illustration, friendly rounded form, soft dimensional highlights, clear simple silhouette at 48 pixels. Square canvas, centered complete object with 12% empty margin. Truly transparent background. No floor or cast shadow, no additional objects except those specified, no person, no watermark. No text. For star: exactly five star points."
+    },
+    {
+      "id": "game-find",
+      "files": [
+        "public/assets/game-find-storybook-v1.webp"
+      ],
+      "prompt": "Single isolated learning game icon for a five-year-old child's number game: a charming magnifying glass with a clearly readable single blue digit 7 inside its lens, golden handle and two tiny star accents. Premium hand-painted fairytale toy illustration, friendly rounded form, soft dimensional highlights, clear simple silhouette at 48 pixels. Square canvas, centered complete object with 12% empty margin. Truly transparent background. No floor or cast shadow, no additional objects except those specified, no person, no watermark. Only text is the single digit 7, large, blue and clear."
+    }
+  ]
+}

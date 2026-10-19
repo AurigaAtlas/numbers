@@ -152,7 +152,7 @@ export const gameCards = [
     title: "숫자 찾기",
     subtitle: "목소리를 듣고 숫자를 골라요",
     intro: "잘 듣고 맞는 숫자를 눌러봐!",
-    image: "./assets/game-find.webp",
+    image: "./assets/game-find-storybook-v1.webp",
     color: "coral",
     reward: 9
   },
@@ -301,9 +301,9 @@ export const levels = [
 ];
 
 export const countObjects = [
-  { name: "별", image: "./assets/object-star.webp" },
+  { name: "별", image: "./assets/object-star-storybook-v1.webp" },
   { name: "사과", image: "./assets/object-apple.webp" },
-  { name: "하트", image: "./assets/object-heart.webp" }
+  { name: "하트", image: "./assets/object-heart-storybook-v1.webp" }
 ];
 
 export const praise = ["잘했어!", "멋져!", "좋았어!", "정말 정확해!", "최고야!"];
