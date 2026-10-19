@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gameCards, hangulGameCards, levels, praise, shopCategories, shopItems } from "./data";
 import { Board } from "./Board";
 import { LOT_COUNT, normalizeBoard } from "./board";
-import { Dex, dexOpenLine, dexSpeech } from "./Dex";
+import { Dex, dexOpenLine } from "./Dex";
 import { GameScreen } from "./games";
 import {
   BackIcon,
@@ -31,15 +31,22 @@ import {
   TrophyIcon
 } from "./icons";
 import { bump, centerOf, flyCoins, prefersReducedMotion, viewportCenter } from "./motion";
-import { hangulAnswerSpeech, hangulLevels, hangulPrompt, makeHangulRound, spokenForm } from "./hangul";
-import { MISSION_REWARD, applyMissionEvent, ensureDaily, itemKey, missionsDone, recordResult } from "./learning";
+import { hangulLevels, makeHangulRound } from "./hangul";
+import { MISSION_REWARD, applyMissionEvent, dayKey, ensureDaily, itemKey, logPlay, missionsDone, recordResult } from "./learning";
 import { MissionPanel } from "./Missions";
 import { LevelUpOverlay, SettingsSheet } from "./overlays";
-import { countingWord, josa, makeRound, numberJosa, sinoWord } from "./rounds";
+import { BreakOverlay, ParentGate, ReportSheet } from "./parent";
+import { countingWord, josa, makeRound, numberJosa } from "./rounds";
 import { sfx } from "./sfx";
+import { say as lines } from "./speech";
 import { speak, stopSpeaking } from "./voice";
+import { loadVoicePack, unlockVoicePack, voicePackInfo } from "./voicePack";
 
 const STORAGE_KEY = "numbers-playground-v2";
+const PLAY_TICK_MS = 15000;
+const IDLE_MS = 60000;
+const REST_RESET_MS = 10 * 60000;
+const GATE_GRACE_MS = 5 * 60000;
 const LEGACY_STORAGE_KEY = "numbers-playground-v1";
 const SETTINGS_KEY = "numbers-playground-settings";
 const LEGACY_SOUND_KEY = "numbers-playground-sound";
@@ -69,14 +76,16 @@ const defaultState = {
   lastRewardDate: null,
   mastery: {},
   daily: null,
-  board: null
+  board: null,
+  history: {}
 };
 
 const defaultSettings = {
   sound: true,
   voiceURI: null,
   rate: "normal",
-  praiseVoice: true
+  praiseVoice: true,
+  breakMinutes: 0
 };
 
 const confettiColors = ["#FF5C7A", "#FFC62E", "#3CC47C", "#3D8BFF", "#A07CFF", "#FF8A3D", "#22B8CF"];
@@ -134,7 +143,7 @@ function loadSubject() {
 }
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+  return dayKey();
 }
 
 function clamp(value, min, max) {
@@ -171,7 +180,8 @@ function normalizeState(rawState) {
     progress: normalizeProgress(rawState?.progress),
     mastery: rawState?.mastery ?? {},
     daily: ensureDaily(rawState?.daily, todayKey()),
-    board: normalizeBoard(rawState?.board)
+    board: normalizeBoard(rawState?.board),
+    history: rawState?.history ?? {}
   };
 }
 
@@ -219,38 +229,18 @@ function randomPraise() {
 
 // What the voice says when a round starts (and on "다시 듣기").
 function promptFor(round) {
-  if (trackOf(round.gameId) === "hangul") return hangulPrompt(round);
-  switch (round.gameId) {
-    case "find":
-      return `${josa(sinoWord(round.answer), "을", "를")} 찾아주세요.`;
-    case "count":
-      return "몇 개인지 세어볼까요?";
-    case "order":
-      return `${sinoWord(round.sequence[0])}부터 차례대로 눌러주세요.`;
-    case "compare":
-      if (round.showNumerals) return round.ask === "more" ? "더 큰 숫자를 골라주세요." : "더 작은 숫자를 골라주세요.";
-      return round.ask === "more" ? "더 많은 쪽을 골라주세요." : "더 적은 쪽을 골라주세요.";
-    case "missing":
-      return "빈칸에 들어갈 숫자는 뭘까요?";
-    case "add":
-      return `${sinoWord(round.a)} ${round.op === "+" ? "더하기" : "빼기"} ${josa(sinoWord(round.b), "은", "는")} 얼마일까요?`;
-    case "balloon":
-      return `${sinoWord(round.target)} 풍선을 터뜨려주세요.`;
-    default:
-      return null;
-  }
+  return lines.prompt(round);
 }
 
-// After a wrong answer: what to show and what the voice says, when there is one.
+// After a wrong answer: what to show, and the answer to read aloud, when there is one.
 function answerFeedback(round) {
   if (trackOf(round.gameId) === "hangul") {
-    const say = hangulAnswerSpeech(round);
-    return say ? { show: round.answer, say } : null;
+    return round.gameId === "h-trace" ? null : { show: round.answer, value: round.answer };
   }
   const number = ["find", "count", "missing", "add"].includes(round.gameId)
     ? round.answer
     : round.gameId === "order" ? round.next : null;
-  return number ? { show: number, say: sinoWord(number) } : null;
+  return number ? { show: number, value: number } : null;
 }
 
 function useCountUp(value) {
@@ -307,6 +297,10 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [levelUp, setLevelUp] = useState(null);
   const [subject, setSubject] = useState(loadSubject);
+  const [voicePack, setVoicePack] = useState(null);
+  const [gate, setGate] = useState(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [onBreak, setOnBreak] = useState(false);
 
   const walletRef = useRef(null);
   const timers = useRef(new Set());
@@ -316,6 +310,9 @@ export default function App() {
   settingsRef.current = settings;
 
   const shownCoins = useCountUp(profile.coins);
+  const gatePassedAt = useRef(0);
+  const onBreakRef = useRef(onBreak);
+  onBreakRef.current = onBreak;
 
   useEffect(() => {
     sfx.setEnabled(settings.sound);
@@ -325,6 +322,38 @@ export default function App() {
       // ignore
     }
   }, [settings]);
+
+  useEffect(() => {
+    loadVoicePack().then(() => setVoicePack(voicePackInfo()));
+    window.addEventListener("pointerdown", unlockVoicePack, { once: true });
+    return () => window.removeEventListener("pointerdown", unlockVoicePack);
+  }, []);
+
+  // Play time: counted while the page is visible and the child touched it in the last minute.
+  // A long pause (screen off, app closed) counts as a rest and restarts the break timer.
+  const playClock = useRef({ lastTouch: Date.now(), lastTick: Date.now(), session: 0 });
+  useEffect(() => {
+    const touch = () => {
+      playClock.current.lastTouch = Date.now();
+    };
+    window.addEventListener("pointerdown", touch);
+    const timer = window.setInterval(() => {
+      const clock = playClock.current;
+      const now = Date.now();
+      if (now - clock.lastTick > REST_RESET_MS) clock.session = 0;
+      if (document.visibilityState !== "visible" || now - clock.lastTouch > IDLE_MS || onBreakRef.current) return;
+      clock.lastTick = now;
+      clock.session += PLAY_TICK_MS / 1000;
+      updateProfile((current) => ({ ...current, history: logPlay(current.history, todayKey(), { seconds: PLAY_TICK_MS / 1000 }) }));
+      const limit = settingsRef.current.breakMinutes * 60;
+      if (limit && clock.session >= limit) startBreak();
+    }, PLAY_TICK_MS);
+    return () => {
+      window.removeEventListener("pointerdown", touch);
+      window.clearInterval(timer);
+    };
+    // startBreak and updateProfile only use refs and state setters, so mounting once is enough.
+  }, []);
 
   useEffect(() => {
     try {
@@ -387,6 +416,37 @@ export default function App() {
       onStart: track ? () => setSpeaking(true) : undefined,
       onEnd: track ? () => setSpeaking(false) : undefined
     });
+  }
+
+  // Grown-up only actions ask a times-table question, at most once every few minutes.
+  function askParent(then) {
+    if (Date.now() - gatePassedAt.current < GATE_GRACE_MS) {
+      then();
+      return;
+    }
+    setGate({ then });
+  }
+
+  function passGate() {
+    gatePassedAt.current = Date.now();
+    const then = gate?.then;
+    setGate(null);
+    then?.();
+  }
+
+  function startBreak() {
+    clearTimers();
+    stopSpeaking();
+    setOnBreak(true);
+    if (settingsRef.current.praiseVoice) say(lines.breakTime);
+  }
+
+  function endBreak() {
+    playClock.current.session = 0;
+    playClock.current.lastTouch = Date.now();
+    setOnBreak(false);
+    // Pick the game back up with a fresh question; the old one's timers were cleared.
+    if (screen === "game" && activeGame) startGame(activeGame.id, { fresh: false });
   }
 
   function showToast(text, tone = "info") {
@@ -523,8 +583,8 @@ export default function App() {
     if (settingsRef.current.praiseVoice) {
       const answer = answerFeedback(finishedRound);
       const line = correct
-        ? combo ? `우와, ${streak}번 연속이야!` : secondTry ? "맞았어! 잘했어!" : word
-        : answer ? `정답은 ${josa(answer.say, "이야", "야")}` : "괜찮아, 다시 해보자!";
+        ? combo ? lines.combo(streak) : secondTry ? lines.secondTryRight : word
+        : answer ? lines.answerIs(answer.value) : lines.tryAgain;
       schedule(() => say(line), correct ? 250 : 350);
     }
     setMood({ id: Date.now(), type: correct ? "happy" : "oops" });
@@ -544,7 +604,8 @@ export default function App() {
       coins: latest.coins + reward,
       progress: nextProgress,
       mastery,
-      daily
+      daily,
+      history: logPlay(latest.history, todayKey(), { track, firstTry })
     }));
     schedule(() => coinsToWallet(viewportCenter(), correct ? 6 : 3), correct ? 420 : 500);
 
@@ -553,7 +614,7 @@ export default function App() {
         sfx.levelUp();
         setLevelUp({ ...leveledUp, track });
         setMessage(`${leveledUp.id}단계 ${leveledUp.name}에 올랐어!`);
-        if (settingsRef.current.praiseVoice) say(`레벨 업! ${leveledUp.name} 단계가 열렸어요!`);
+        if (settingsRef.current.praiseVoice) say(lines.levelUp(leveledUp.name));
       }, 1500);
       return;
     }
@@ -591,28 +652,28 @@ export default function App() {
                 : current
             ));
             sfx.count(Math.min(index + 1, 12));
-            say(countingWord(index + 1), { rate: "fast" });
+            say(lines.counting(index + 1), { rate: "fast" });
           }, 450 + index * 650);
         }
         break;
       case "add":
         setMessage("그림을 하나씩 세어보자!");
-        say("그림을 하나씩 세어볼까?");
+        say(lines.addHint);
         break;
       case "missing": {
         const step = target.sequence[1] - target.sequence[0];
-        const text = `${Math.abs(step)}씩 ${step > 0 ? "커지고" : "작아지고"} 있어!`;
+        const text = lines.missingHint(step);
         setMessage(text);
         say(text);
         break;
       }
       case "h-picture":
         setMessage(`${target.entry.word}, 천천히 읽어볼까?`);
-        say(target.entry.word.split("").join(", "), { rate: "slow" });
+        say(lines.slowWord(target.entry.word), { rate: "slow" });
         break;
       case "h-build":
         setMessage("두 친구를 천천히 합쳐봐!");
-        say(`${spokenForm(target.consonant)}, ${spokenForm(target.vowel)}`, { rate: "slow" });
+        say(lines.buildHint(target.consonant, target.vowel), { rate: "slow" });
         break;
       default:
         setMessage("한 번 더 해보자!");
@@ -642,7 +703,7 @@ export default function App() {
     const tapped = [...round.tapped, index];
     setRound({ ...round, tapped });
     sfx.count(Math.min(tapped.length, 12));
-    say(countingWord(tapped.length), { rate: "fast" });
+    say(lines.counting(tapped.length), { rate: "fast" });
     if (tapped.length === round.count) {
       setMessage(`모두 ${countingWord(tapped.length)}! 이제 숫자를 골라봐.`);
     }
@@ -657,7 +718,7 @@ export default function App() {
         sfx.wrong();
         setMood({ id: Date.now(), type: "oops" });
         setMessage(`앗, ${value}보다 ${numberJosa(round.next, "을", "를")} 먼저 찾아봐!`);
-        say(`${josa(sinoWord(round.next), "을", "를")} 찾아봐`);
+        say(lines.orderHint(round.next));
         return;
       }
       setRound({ ...round, feedback: { picked: value, correct: false } });
@@ -782,6 +843,7 @@ export default function App() {
     updateProfile((current) => ({
       ...current,
       mastery: recordResult(current.mastery, itemKey(learnRound), firstTry),
+      history: logPlay(current.history, todayKey(), { track: trackOf(learnRound.gameId), firstTry }),
       daily: applyMissionEvent(ensureDaily(current.daily, todayKey()), {
         gameId: learnRound.gameId,
         track: trackOf(learnRound.gameId),
@@ -808,7 +870,7 @@ export default function App() {
   function openDexEntry(value) {
     sfx.pop();
     setMessage(dexOpenLine(value));
-    say(dexSpeech(value));
+    say(lines.dex(value));
     updateProfile((current) => ({
       ...current,
       daily: applyMissionEvent(ensureDaily(current.daily, todayKey()), { dex: true })
@@ -828,7 +890,7 @@ export default function App() {
     setMood({ id: Date.now(), type: "happy" });
     coinsToWallet(centerOf(element), 10);
     setMessage(`오늘의 미션을 다 했어! 코인 ${MISSION_REWARD}개!`);
-    if (settingsRef.current.praiseVoice) say("미션 성공! 보물상자를 열었어요!");
+    if (settingsRef.current.praiseVoice) say(lines.missionDone);
   }
 
   function buyOrEquip(item, element) {
@@ -947,7 +1009,7 @@ export default function App() {
           >
             {settings.sound ? <SpeakerIcon /> : <SoundOffIcon />}
           </button>
-          <button className="icon-button" onClick={() => setSettingsOpen(true)} aria-label="설정">
+          <button className="icon-button" onClick={() => askParent(() => setSettingsOpen(true))} aria-label="설정">
             <GearIcon />
           </button>
           <div className="wallet" ref={walletRef} aria-label={`코인 ${profile.coins}개`}>
@@ -966,12 +1028,32 @@ export default function App() {
       {settingsOpen && (
         <SettingsSheet
           settings={settings}
+          pack={voicePack}
           onChange={updateSettings}
-          onPreview={(voiceURI, rate) => say("안녕! 같이 숫자 놀이 하자. 일, 이, 삼!", { voiceURI, rate })}
+          onPreview={(voiceURI, rate) => say(lines.preview, { voiceURI, rate })}
           onReset={resetData}
+          onReport={() => {
+            setSettingsOpen(false);
+            setReportOpen(true);
+          }}
           onClose={() => setSettingsOpen(false)}
         />
       )}
+
+      {reportOpen && <ReportSheet profile={profile} onClose={() => setReportOpen(false)} />}
+
+      {onBreak && (
+        <BreakOverlay
+          onDone={() => {
+            // Back in a game the next question is read out instead.
+            if (settingsRef.current.praiseVoice && screen !== "game") say(lines.breakOver);
+            endBreak();
+          }}
+          onParent={() => askParent(endBreak)}
+        />
+      )}
+
+      {gate && <ParentGate onPass={passGate} onClose={() => setGate(null)} />}
 
       {toast && (
         <div key={toast.id} className={`toast toast-${toast.tone}`} role="status">
@@ -1191,7 +1273,7 @@ const moodKeyframes = {
 function Character({ equippedItems, message, roomItem, progress, mood }) {
   const bodyRef = useRef(null);
   const layers = [
-    { id: "base", type: "base", image: "./assets/avatar-base-generated.png", name: "기본 공주 캐릭터" },
+    { id: "base", type: "base", image: "./assets/avatar-base-generated.webp", name: "기본 공주 캐릭터" },
     ...equippedItems.filter((item) => item.type !== "room")
   ];
 
@@ -1433,7 +1515,7 @@ function Shop({
       </div>
 
       <div className="shop-showcase">
-        <img src="./assets/shop-collection-showcase-v3.png" alt="" aria-hidden="true" />
+        <img src="./assets/shop-collection-showcase-v3.webp" alt="" aria-hidden="true" />
         <div>
           <p className="eyebrow">새 컬렉션</p>
           <strong>공주 옷장</strong>

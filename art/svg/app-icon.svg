@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#ffd3e2"/>
+        <stop offset="1" stop-color="#ffe9b8"/>
+      </linearGradient>
+      
+  <linearGradient id="star" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#fff2b0"/>
+    <stop offset="0.45" stop-color="#f7c948"/>
+    <stop offset="1" stop-color="#c98a12"/>
+  </linearGradient>
+    </defs>
+    <rect width="512" height="512" fill="url(#bg)"/>
+    <circle cx="256" cy="230" r="150" fill="#fff" opacity="0.5"/>
+    <rect x="110" y="392" width="292" height="16" rx="8" fill="#c98a6a" opacity="0.35"/>
+    
+      <circle cx="156" cy="400" r="34" fill="#ff8fab"/>
+      <circle cx="146" cy="388" r="10" fill="#fff" opacity="0.55"/>
+      <circle cx="256" cy="400" r="34" fill="#7cc6ff"/>
+      <circle cx="246" cy="388" r="10" fill="#fff" opacity="0.55"/>
+      <circle cx="356" cy="400" r="34" fill="#8ee08a"/>
+      <circle cx="346" cy="388" r="10" fill="#fff" opacity="0.55"/>
+    <path d="M256.0,90.0 L292.4,171.8 L381.5,181.2 L315.0,241.2 L333.6,328.8 L256.0,284.0 L178.4,328.8 L197.0,241.2 L130.5,181.2 L219.6,171.8Z" fill="url(#star)" stroke="#e0a21c" stroke-width="10" stroke-linejoin="round"/>
+    <circle cx="222" cy="220" r="12" fill="#5a3a5e"/>
+    <circle cx="290" cy="220" r="12" fill="#5a3a5e"/>
+    <circle cx="226" cy="215" r="4" fill="#fff"/>
+    <circle cx="294" cy="215" r="4" fill="#fff"/>
+    <path d="M232 250 Q256 272 280 250" fill="none" stroke="#5a3a5e" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="200" cy="248" r="13" fill="#ff8fab" opacity="0.6"/>
+    <circle cx="312" cy="248" r="13" fill="#ff8fab" opacity="0.6"/>
+    <path d="M118 98 Q121.96 116.04 140 120 Q121.96 123.96 118 142 Q114.04 123.96 96 120 Q114.04 116.04 118 98Z" fill="#fff6c2"/>
+    <path d="M400 88 Q402.88 101.12 416 104 Q402.88 106.88 400 120 Q397.12 106.88 384 104 Q397.12 101.12 400 88Z" fill="#fff6c2"/>
+    <path d="M414 288 Q416.16 297.84 426 300 Q416.16 302.16 414 312 Q411.84 302.16 402 300 Q411.84 297.84 414 288Z" fill="#ffffff"/></svg>

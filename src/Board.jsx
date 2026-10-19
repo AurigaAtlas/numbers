@@ -3,7 +3,7 @@ import { AddGame, CountGame } from "./games";
 import { tileState } from "./gameParts";
 import { HangulBuild, HangulPicture } from "./hangulGames";
 import { HouseArt } from "./HouseArt";
-import { hangulPrompt, initialOf, letterName, makeHangulRound, spokenForm } from "./hangul";
+import { initialOf, letterName, makeHangulRound } from "./hangul";
 import { BackIcon, CheckIcon, CoinIcon, LockIcon } from "./icons";
 import {
   BOARD_SIZE,
@@ -19,8 +19,9 @@ import {
   tiles,
   upgradeCost
 } from "./board";
-import { countingWord, josa, makeOptions, makeRound, randInt, sinoWord, toneClass } from "./rounds";
+import { countingWord, josa, makeOptions, makeRound, randInt, toneClass } from "./rounds";
 import { sfx } from "./sfx";
+import { say as lines, withRo } from "./speech";
 
 const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 const STEP_MS = 520;
@@ -44,21 +45,6 @@ function Die({ value, rolling, numeral, numberFrom, counted }) {
       )}
     </span>
   );
-}
-
-// 으로/로: words ending in a vowel or ㄹ take 로 ("리을로", "성으로").
-function withRo(word) {
-  const code = word.charCodeAt(word.length - 1) - 0xac00;
-  const final = code >= 0 && code <= 11171 ? code % 28 : 0;
-  return `${word}${final === 0 || final === 8 ? "로" : "으로"}`;
-}
-
-function quizPrompt(round) {
-  if (round.gameId === "count") return "몇 개인지 세어볼까요?";
-  if (round.gameId === "add") {
-    return `${sinoWord(round.a)} ${round.op === "+" ? "더하기" : "빼기"} ${josa(sinoWord(round.b), "은", "는")} 얼마일까요?`;
-  }
-  return hangulPrompt(round);
 }
 
 export function Board({
@@ -127,7 +113,7 @@ export function Board({
       setDiceQ({ answer: sum, options: makeOptions(sum, 2, faces * 2, 4), eliminated: [] });
       setPhase("question");
       setMessage(numeralDie ? "두 주사위를 더하면 몇일까?" : "주사위 점을 모두 세어봐!");
-      say(numeralDie ? "두 주사위를 더하면 몇일까요?" : "주사위 점이 모두 몇 개일까요?");
+      say(lines.diceAsk(numeralDie));
     }, 1000);
   }
 
@@ -137,7 +123,7 @@ export function Board({
       later(() => {
         setCounted(n);
         sfx.count(Math.min(n, 12));
-        say(countingWord(n), { rate: "fast" });
+        say(lines.counting(n), { rate: "fast" });
       }, 300 + n * 560);
     }
   }
@@ -160,12 +146,12 @@ export function Board({
       sfx.correct();
       if (!diceQ.retried) onEarn(2, null);
       setMessage(`맞았어! ${sum}칸 가자!`);
-      say(`맞았어! ${sinoWord(sum)}칸 가자!`);
+      say(lines.diceRight(sum));
     } else {
       sfx.wrong();
       setCounted(sum);
       setMessage(`정답은 ${sum}! ${sum}칸 가자!`);
-      say(`정답은 ${josa(sinoWord(sum), "이야", "야")}. ${sinoWord(sum)}칸 가자!`);
+      say(lines.diceWrong(sum));
     }
     later(() => move(sum), 1300);
   }
@@ -181,7 +167,7 @@ export function Board({
         setPosition(tileIndex);
         setStep(i + 1);
         sfx.count(Math.min(i + 1, 12));
-        say(countingWord(i + 1), { rate: "fast" });
+        say(lines.counting(i + 1), { rate: "fast" });
       }, (i + 1) * STEP_MS);
     });
     later(() => land(path[path.length - 1], passedStart), steps * STEP_MS + 450);
@@ -198,7 +184,7 @@ export function Board({
     let intro = "";
     if (passedStart) {
       onEarn(PASS_START_REWARD, tokenRef.current);
-      intro = `출발점을 지나서 용돈 ${sinoWord(PASS_START_REWARD)} 코인! `;
+      intro = `${lines.passStart(PASS_START_REWARD)} `;
     }
 
     if (tile.type === "lot") {
@@ -208,11 +194,11 @@ export function Board({
         const rent = houseRent(house);
         onEarn(rent, tokenRef.current);
         setMessage(`내 집에 왔어! 쉬면서 코인 ${rent}개를 받았어.`);
-        say(`${intro}${tile.name}, 내 집에 왔어요! 예쁘게 꾸며볼까요?`);
+        say(`${intro}${lines.homeAgain(tile)}`);
         setEvent({ kind: "house", tile, rent });
       } else {
         setMessage(`${tile.name}! ${tile.word}의 첫 글자는 '${tile.word[0]}'`);
-        say(`${intro}${tile.name}! ${josa(tile.word, "은", "는")} ${withRo(letterName(initial))} 시작해요.`);
+        say(`${intro}${lines.lot(tile, initial)}`);
         setEvent({ kind: "lot", tile });
       }
     } else if (tile.type === "numberQuiz" || tile.type === "hangulQuiz" || tile.type === "school") {
@@ -231,22 +217,22 @@ export function Board({
       setQuiz(round);
       setEvent({ kind: "quiz", tile, reward: tile.type === "school" ? 14 : 8, subject });
       setMessage(tile.type === "school" ? "학교에 왔어! 문제를 풀어볼까?" : `${tile.name}! 문제를 풀어봐.`);
-      say(`${intro}${quizPrompt(round)}`);
+      say(`${intro}${lines.prompt(round)}`);
     } else if (tile.type === "park") {
       onEarn(5, tokenRef.current);
       setEvent({ kind: "park", tile });
       setMessage("놀이터에서 신나게 놀았어! 코인 5개!");
-      say(`${intro}놀이터에서 신나게 놀았어요!`);
+      say(`${intro}${lines.park}`);
     } else if (tile.type === "gift") {
       const amount = randInt(1, 3) * 5;
       onEarn(amount, tokenRef.current);
       setEvent({ kind: "gift", tile, amount });
       setMessage(`선물 상자에서 코인 ${amount}개!`);
-      say(`${intro}선물 상자에서 코인 ${sinoWord(amount)}개가 나왔어요!`);
+      say(`${intro}${lines.gift(amount)}`);
     } else {
       setEvent({ kind: "start", tile });
       setMessage("출발점에 도착했어!");
-      if (intro) say(intro);
+      if (intro) say(intro.trim());
     }
     setPhase("event");
   }
@@ -265,7 +251,7 @@ export function Board({
     if (board.owned[tile.id]) return;
     if (!onSpend(tile.price, element)) {
       sfx.wrong();
-      say(`코인이 ${sinoWord(tile.price - coins)}개 더 필요해요.`);
+      say(lines.needCoins(tile.price - coins));
       return;
     }
     const nextCount = ownedCount + 1;
@@ -275,12 +261,12 @@ export function Board({
     }));
     setEvent({ kind: "house", tile, justBought: true });
     setMessage(`${tile.name}에 내 집이 생겼어!`);
-    say(`${tile.name}에 내 집이 생겼어요!`);
+    say(lines.newHouse(tile));
     if (nextCount === LOT_COUNT) {
       later(() => {
         onEarn(VILLAGE_BONUS, null);
         onCelebrate(VILLAGE_BONUS, "마을 완성!");
-        say("우와! 마을의 집을 모두 모았어요!");
+        say(lines.villageDone);
       }, 900);
     } else {
       onCelebrate(null, "새 집!");
@@ -299,13 +285,13 @@ export function Board({
     if (!house || house.decor.includes(item.id)) return;
     if (!onSpend(item.price, element)) {
       sfx.wrong();
-      say(`코인이 ${sinoWord(item.price - coins)}개 더 필요해요.`);
+      say(lines.needCoins(item.price - coins));
       return;
     }
     sfx.pop();
     updateHouse(tile, (current) => ({ ...current, decor: [...current.decor, item.id] }));
     setMessage(`${josa(item.name, "을", "를")} 놓았어!`);
-    say(`${josa(item.name, "을", "를")} 놓았어요!`);
+    say(lines.decorPlaced(item.name));
   }
 
   function setRoof(tile, color) {
@@ -319,14 +305,14 @@ export function Board({
     const cost = upgradeCost(tile, house.level);
     if (!onSpend(cost, element)) {
       sfx.wrong();
-      say(`코인이 ${sinoWord(cost - coins)}개 더 필요해요.`);
+      say(lines.needCoins(cost - coins));
       return;
     }
     updateHouse(tile, (current) => ({ ...current, level: current.level + 1 }));
     const name = houseNames[house.level];
     onCelebrate(null, `${name}!`);
     setMessage(`우와, ${josa(name, "이", "가")} 되었어!`);
-    say(`우와! ${josa(name, "이", "가")} 되었어요!`);
+    say(lines.upgraded(name));
   }
 
   // ------------------------------------------------------------ quiz
@@ -335,7 +321,7 @@ export function Board({
     const tapped = [...quiz.tapped, index];
     setQuiz({ ...quiz, tapped });
     sfx.count(Math.min(tapped.length, 12));
-    say(countingWord(tapped.length), { rate: "fast" });
+    say(lines.counting(tapped.length), { rate: "fast" });
   }
 
   function answerQuiz(value) {
@@ -348,9 +334,9 @@ export function Board({
       if (quiz.gameId === "count") next.tapped = Array.from({ length: quiz.count }, (_, i) => i);
       setQuiz(next);
       sfx.wrong();
-      if (quiz.gameId === "h-picture") say(quiz.entry.word.split("").join(", "), { rate: "slow" });
-      else if (quiz.gameId === "h-build") say(`${spokenForm(quiz.consonant)}, ${spokenForm(quiz.vowel)}`, { rate: "slow" });
-      else say("같이 세어보자!");
+      if (quiz.gameId === "h-picture") say(lines.slowWord(quiz.entry.word), { rate: "slow" });
+      else if (quiz.gameId === "h-build") say(lines.buildHint(quiz.consonant, quiz.vowel), { rate: "slow" });
+      else say(lines.countTogether);
       setMessage("한 번 더 해보자!");
       return;
     }
@@ -362,10 +348,10 @@ export function Board({
       sfx.correct();
       onEarn(reward, null);
       onCelebrate(reward, firstTry ? "정답!" : "다시 해서 맞혔어!");
-      say(firstTry ? "정답이에요!" : "맞았어! 잘했어!");
+      say(firstTry ? lines.quizRight : lines.secondTryRight);
     } else {
       sfx.wrong();
-      say(`정답은 ${josa(spokenForm(String(quiz.answer)), "이야", "야")}`);
+      say(lines.answerIs(quiz.answer));
       setMessage(`정답은 ${quiz.answer}! 다음에 또 해보자.`);
     }
     later(closeEvent, correct ? 1700 : 2300);

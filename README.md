@@ -1,6 +1,6 @@
 # 숫자 놀이터
 
-5살 아이가 iPad에서 1부터 10까지 숫자를 익힐 수 있도록 만든 React 숫자게임입니다.
+5살 아이가 iPad에서 숫자(1~20)와 한글을 놀이로 익힐 수 있도록 만든 React 학습 게임입니다.
 
 ## 기능
 
@@ -34,6 +34,19 @@
 - 오늘의 미션: 매일 미션 3개를 다 하면 보물상자에서 코인 30개를 받습니다.
 - 연속 정답: 처음에 맞힌 정답이 3번 이어질 때마다 보너스 코인을 받습니다.
 
+## 부모님 기능
+
+설정(톱니바퀴)은 곱셈 문제를 풀어야 열립니다(5분 동안은 다시 묻지 않음).
+
+- 학습 리포트: 최근 7일 놀이 시간, 숫자·한글 정답률, 단계, 스티커, 자주 틀리는 숫자·글자, 1~20과 자음·모음별 익힘 정도.
+- 쉬는 시간 알림: 15/20/30분 놀면 3분 쉬는 화면이 나옵니다. 기다리면 다시 놀 수 있고, 부모님은 곱셈 문제로 바로 풀어줄 수 있습니다.
+- 놀이 시간은 화면을 보고 만지고 있을 때만 셉니다.
+
+## 오프라인 · 홈 화면
+
+한 번 열면 그림과 게임이 기기에 저장되어 인터넷 없이도 놀 수 있습니다.
+iPad Safari에서 공유 → `홈 화면에 추가`를 하면 앱처럼 전체 화면으로 열립니다.
+
 ## 단계
 
 정답으로 별을 모으면 다음 단계가 열립니다. 열린 단계는 홈 화면에서 자유롭게 고를 수 있습니다.
@@ -50,7 +63,30 @@
 
 ## 목소리
 
-설정(톱니바퀴)에서 기기에 있는 한국어 목소리를 골라 미리 들어볼 수 있고, 말 빠르기와 칭찬 목소리를 조절할 수 있습니다.
+### 숫자 놀이터 목소리 (오픈소스, 모든 기기 공통)
+
+앱이 말하는 모든 문장(약 1,600개)을 오픈소스 TTS인 [MeloTTS](https://github.com/myshell-ai/MeloTTS)(MIT 라이선스) 한국어 목소리로
+미리 녹음해 `public/voice`에 mp3로 넣어 둘 수 있습니다. 녹음이 있으면 iPad, 안드로이드, PC 어디서나 같은 목소리로,
+인터넷 없이도 말합니다. 녹음되지 않은 문장은 기기의 한국어 목소리로 읽습니다.
+
+가장 쉬운 방법은 GitHub에서 **Actions → Generate voice pack → Run workflow**를 누르는 것입니다.
+녹음이 끝나면 클립을 커밋하고 자동으로 다시 배포합니다(새 문장만 녹음, 전체 다시 녹음은 `force` 체크).
+
+직접 녹음하려면 (Python 3.10 권장):
+
+```bash
+pip install -r scripts/voice/requirements.txt
+python -m unidic download
+node scripts/voice/build-catalog.mjs   # 앱이 말하는 문장 목록 → scripts/voice/phrases.json
+python scripts/voice/generate.py       # 없는 클립만 녹음 → public/voice
+```
+
+녹음에는 pypi.org, download.pytorch.org, huggingface.co, myshell-public-repo-hosting.s3.amazonaws.com 접속이 필요합니다.
+앱의 대사는 모두 `src/speech.js`에 모여 있어, 대사를 바꾼 뒤 위 과정을 다시 하면 새 문장만 녹음됩니다.
+
+### 기기 목소리
+
+설정에서 기기에 있는 한국어 목소리를 골라 미리 들어볼 수 있고, 말 빠르기와 칭찬 목소리를 조절할 수 있습니다.
 iPad에서는 `설정 → 손쉬운 사용 → 읽기 및 말하기 → 음성 → 한국어`에서 고품질 목소리를 내려받으면 훨씬 자연스러워집니다.
 
 ## 디자인 & 모션
@@ -76,6 +112,9 @@ npm run dev
 
 ## 그림 다시 만들기
 
-`art/` 폴더에 일부 상점 소품, 방 배경, 별 그림, 숫자 찾기 아이콘의 벡터 원본이 있습니다.
-수정한 뒤 Playwright가 있는 환경에서 `node art/render.mjs`를 실행하면 `public/assets`의 PNG가 다시 만들어집니다.
-(특정 그림만: `node art/render.mjs magic-book room-moon`)
+`art/` 폴더에 일부 상점 소품, 방 배경, 별 그림, 숫자 찾기 아이콘, 앱 아이콘의 벡터 원본이 있습니다.
+수정한 뒤 Playwright가 있는 환경에서 `node art/render.mjs`를 실행하면 `public/assets`의 WebP 그림이 다시 만들어집니다.
+(특정 그림만: `node art/render.mjs magic-book room-moon app-icon`)
+
+새 PNG 그림을 넣을 때는 `python3 scripts/optimize-images.py public/assets/새그림.png`로 WebP로 바꾸고
+코드의 경로를 `.webp`로 적어 주세요. 상점 그림은 512px로 줄여 로딩이 빨라집니다.

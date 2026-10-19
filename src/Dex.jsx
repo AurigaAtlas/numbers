@@ -1,16 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { BackIcon, PlayIcon, SpeakerIcon, StarShape } from "./icons";
-import { CONSONANTS, VOWELS, compose, exampleWord, letterName, letterTone, words } from "./hangul";
+import { CONSONANTS, VOWELS, compose, exampleWord, letterName, letterTone } from "./hangul";
 import { isMastered } from "./learning";
+import { say as lines, vowelExample } from "./speech";
 import { countingWord, josa, sinoWord, toneClass } from "./rounds";
 
 const NUMBERS = Array.from({ length: 20 }, (_, index) => index + 1);
 const SYLLABLE_VOWELS = ["ㅏ", "ㅓ", "ㅗ", "ㅜ", "ㅣ"];
 const SYLLABLE_CONSONANTS = ["ㄱ", "ㄴ", "ㄷ", "ㅁ", "ㅅ"];
-
-function vowelExample(vowel) {
-  return words.find((entry) => entry.word[0] === compose("ㅇ", vowel)) ?? null;
-}
 
 export function dexEntries(subject) {
   if (subject === "numbers") return NUMBERS.map((n) => ({ key: `num:${n}`, value: n }));
@@ -19,14 +16,6 @@ export function dexEntries(subject) {
 
 export function stickerCount(subject, mastery) {
   return dexEntries(subject).filter((entry) => isMastered(mastery[entry.key])).length;
-}
-
-// What the voice says when a card is opened.
-export function dexSpeech(value) {
-  if (typeof value === "number") return `${sinoWord(value)}, ${countingWord(value)}`;
-  const name = letterName(value);
-  const example = CONSONANTS.includes(value) ? exampleWord(value) : vowelExample(value);
-  return example ? `${name}. ${example.word}의 ${name}` : name;
 }
 
 function TenFrames({ n, active }) {
@@ -69,10 +58,10 @@ function NumberDetail({ n, onSay }) {
     timers.current = Array.from({ length: n }, (_, index) =>
       setTimeout(() => {
         setActive(index);
-        onSay(countingWord(index + 1), "fast");
+        onSay(lines.counting(index + 1), "fast");
       }, index * 650)
     );
-    timers.current.push(setTimeout(() => onSay(`모두 ${countingWord(n)}!`), n * 650 + 200));
+    timers.current.push(setTimeout(() => onSay(lines.countAll(n)), n * 650 + 200));
   }
 
   return (
@@ -86,7 +75,7 @@ function NumberDetail({ n, onSay }) {
       </div>
       <TenFrames n={n} active={active} />
       <div className="dex-actions">
-        <button className="chunky-button dex-say" onClick={() => onSay(dexSpeech(n))}>
+        <button className="chunky-button dex-say" onClick={() => onSay(lines.dex(n))}>
           <SpeakerIcon />
           듣기
         </button>
@@ -136,7 +125,7 @@ function LetterDetail({ jamo, onSay }) {
         ))}
       </div>
       <div className="dex-actions">
-        <button className="chunky-button dex-say" onClick={() => onSay(dexSpeech(jamo))}>
+        <button className="chunky-button dex-say" onClick={() => onSay(lines.dex(jamo))}>
           <SpeakerIcon />
           듣기
         </button>

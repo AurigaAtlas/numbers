@@ -165,6 +165,17 @@ export function GearIcon() {
   );
 }
 
+export function ChartIcon() {
+  return (
+    <svg {...base} strokeWidth="2.4">
+      <path d="M4 20h16" />
+      <rect x="5.5" y="11" width="3.4" height="6.5" rx="1.2" fill="currentColor" fillOpacity="0.25" />
+      <rect x="10.3" y="6" width="3.4" height="11.5" rx="1.2" fill="currentColor" fillOpacity="0.25" />
+      <rect x="15.1" y="9" width="3.4" height="8.5" rx="1.2" fill="currentColor" fillOpacity="0.25" />
+    </svg>
+  );
+}
+
 export function CrownIcon({ className }) {
   return (
     <svg className={className} viewBox="0 0 64 48" aria-hidden="true">

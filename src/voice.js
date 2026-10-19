@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PACK_VOICE, packCovers, playVoicePack, stopVoicePack } from "./voicePack";
 
 // Higher score = more natural sounding. Downloaded "Premium/Enhanced" voices on
 // iPad and "Natural/Online" voices on Edge are far better than the default ones.
@@ -39,6 +40,7 @@ export function koreanVoices() {
 
 export function resolveVoice(voiceURI) {
   const voices = koreanVoices();
+  if (voiceURI === PACK_VOICE) return voices[0] ?? null;
   return voices.find((voice) => voice.voiceURI === voiceURI) ?? voices[0] ?? null;
 }
 
@@ -65,8 +67,18 @@ export const speechRates = {
   fast: 1.02
 };
 
+// The recorded voice pack is used when chosen (or by default when it exists) and it
+// has every piece of the sentence; anything else falls back to the device voice.
 export function speak(text, { voiceURI, rate = "normal", onStart, onEnd } = {}) {
-  if (!hasSpeech() || !text) return;
+  if (!text) return;
+  const wantsPack = voiceURI === PACK_VOICE || !voiceURI;
+  if (wantsPack && packCovers(text)) {
+    if (hasSpeech()) window.speechSynthesis.cancel();
+    playVoicePack(text, { rate, onStart, onEnd });
+    return;
+  }
+  stopVoicePack();
+  if (!hasSpeech()) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   const voice = resolveVoice(voiceURI);
@@ -82,5 +94,6 @@ export function speak(text, { voiceURI, rate = "normal", onStart, onEnd } = {}) 
 }
 
 export function stopSpeaking() {
+  stopVoicePack();
   if (hasSpeech()) window.speechSynthesis.cancel();
 }

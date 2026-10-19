@@ -143,3 +143,51 @@ export function applyMissionEvent(daily, event) {
 export function missionsDone(daily) {
   return daily.missions.every((mission) => mission.progress >= mission.target);
 }
+
+// ---------------------------------------------------------------- play log
+
+const HISTORY_DAYS = 60;
+
+// Local calendar day, so "today" turns over at midnight where the child lives.
+export function dayKey(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+// One record per day: s = seconds played, n/k = [answered, right first time] for numbers/Hangul.
+export function logPlay(history, day, { seconds = 0, track, firstTry } = {}) {
+  const entry = history?.[day] ?? { s: 0, n: [0, 0], k: [0, 0] };
+  const next = { ...entry, s: entry.s + seconds };
+  if (track) {
+    const key = track === "hangul" ? "k" : "n";
+    next[key] = [entry[key][0] + 1, entry[key][1] + (firstTry ? 1 : 0)];
+  }
+  const merged = { ...history, [day]: next };
+  const days = Object.keys(merged).sort();
+  for (const old of days.slice(0, Math.max(0, days.length - HISTORY_DAYS))) delete merged[old];
+  return merged;
+}
+
+export function recentDays(count, today = new Date()) {
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (count - 1 - index));
+    return dayKey(date);
+  });
+}
+
+// Items answered wrongly lately, worst first.
+export function weakItems(mastery, prefix, limit = 6) {
+  return Object.entries(mastery)
+    .filter(([key, entry]) => key.startsWith(prefix) && entry.w >= 1)
+    .sort((a, b) => b[1].w - a[1].w)
+    .slice(0, limit)
+    .map(([key]) => key.slice(prefix.length));
+}
+
+export function masteryState(entry) {
+  if (!entry) return "new";
+  if (isMastered(entry)) return "mastered";
+  if (entry.w >= 1.5) return "weak";
+  return "learning";
+}
