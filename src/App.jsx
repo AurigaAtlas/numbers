@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gameCards, hangulGameCards, levels, praise, shopCategories, shopItems } from "./data";
+import { Board } from "./Board";
+import { LOT_COUNT, normalizeBoard } from "./board";
 import { Dex, dexOpenLine, dexSpeech } from "./Dex";
 import { GameScreen } from "./games";
 import {
@@ -66,7 +68,8 @@ const defaultState = {
   },
   lastRewardDate: null,
   mastery: {},
-  daily: null
+  daily: null,
+  board: null
 };
 
 const defaultSettings = {
@@ -167,7 +170,8 @@ function normalizeState(rawState) {
     },
     progress: normalizeProgress(rawState?.progress),
     mastery: rawState?.mastery ?? {},
-    daily: ensureDaily(rawState?.daily, todayKey())
+    daily: ensureDaily(rawState?.daily, todayKey()),
+    board: normalizeBoard(rawState?.board)
   };
 }
 
@@ -747,6 +751,53 @@ export default function App() {
     setMessage(`펑! ${round.goal - popped.length}개 더 찾아봐.`);
   }
 
+  function openBoard() {
+    sfx.tap();
+    clearTimers();
+    setScreen("board");
+    setMessage("주사위를 굴려서 마을을 여행해봐!");
+  }
+
+  function boardEarn(amount, element) {
+    if (!amount) return;
+    updateProfile((current) => ({ ...current, coins: current.coins + amount }));
+    coinsToWallet(element ? centerOf(element) : viewportCenter(), Math.min(10, Math.max(2, Math.ceil(amount / 3))));
+  }
+
+  function boardSpend(amount, element) {
+    if (profileRef.current.coins < amount) return false;
+    updateProfile((current) => ({ ...current, coins: current.coins - amount }));
+    sfx.buy();
+    flyCoins({ from: centerOf(walletRef.current), to: centerOf(element) ?? viewportCenter(), count: Math.min(8, Math.ceil(amount / 5)) });
+    bump(walletRef.current);
+    return true;
+  }
+
+  function boardChange(change) {
+    updateProfile((current) => ({ ...current, board: change(current.board) }));
+  }
+
+  // Quiz and dice answers on the board count toward mastery and missions like any game.
+  function boardLearn(learnRound, correct, firstTry) {
+    updateProfile((current) => ({
+      ...current,
+      mastery: recordResult(current.mastery, itemKey(learnRound), firstTry),
+      daily: applyMissionEvent(ensureDaily(current.daily, todayKey()), {
+        gameId: learnRound.gameId,
+        track: trackOf(learnRound.gameId),
+        correct
+      })
+    }));
+    if (correct) setMood({ id: Date.now(), type: "happy" });
+  }
+
+  function boardRoll() {
+    updateProfile((current) => ({
+      ...current,
+      daily: applyMissionEvent(ensureDaily(current.daily, todayKey()), { boardRoll: true })
+    }));
+  }
+
   function openDex() {
     sfx.tap();
     clearTimers();
@@ -948,6 +999,7 @@ export default function App() {
               onGift={claimDailyReward}
               onPickLevel={(levelId) => pickLevel(subject, levelId)}
               onDex={openDex}
+              onBoard={openBoard}
               onClaimMissions={claimMissions}
             />
           )}
@@ -967,6 +1019,25 @@ export default function App() {
               onMemory={chooseMemory}
               onBalloon={popBalloon}
               onTraced={finishTrace}
+            />
+          )}
+
+          {screen === "board" && (
+            <Board
+              board={profile.board}
+              coins={profile.coins}
+              numbersLevel={levels[profile.progress.playLevel - 1]}
+              hangulLevel={hangulLevels[profile.progress.hangulPlayLevel - 1]}
+              mastery={profile.mastery}
+              say={say}
+              setMessage={setMessage}
+              onBack={goHome}
+              onEarn={boardEarn}
+              onSpend={boardSpend}
+              onBoardChange={boardChange}
+              onLearn={boardLearn}
+              onCelebrate={triggerCelebration}
+              onRoll={boardRoll}
             />
           )}
 
@@ -1076,9 +1147,11 @@ function Celebration({ reward, word }) {
         <StarShape className="pop-star pop-star-a" />
         <StarShape className="pop-star pop-star-b" />
         <span className={`pop-word ${word.length > 5 ? "is-long" : ""}`}>{word}</span>
-        <strong className="pop-reward">
-          <CoinIcon />+{reward}
-        </strong>
+        {reward !== null && (
+          <strong className="pop-reward">
+            <CoinIcon />+{reward}
+          </strong>
+        )}
       </div>
       {pieces.map((piece, index) => (
         <span
@@ -1174,7 +1247,7 @@ function Character({ equippedItems, message, roomItem, progress, mood }) {
   );
 }
 
-function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLevel, onDex, onClaimMissions }) {
+function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLevel, onDex, onBoard, onClaimMissions }) {
   const track = tracks[subject];
   const { level: unlocked, playLevel, levelStars } = trackState(profile.progress, subject);
   const trackLevels = track.levels;
@@ -1233,6 +1306,19 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
       </section>
 
       <MissionPanel daily={ensureDaily(profile.daily, todayKey())} onClaim={onClaimMissions} />
+
+      <button className="board-banner enter" style={{ "--i": 3 }} onClick={onBoard}>
+        <span className="banner-dice" aria-hidden="true">
+          <i className="mini-die d1"><b /><b /><b /></i>
+          <i className="mini-die d2"><b /><b /></i>
+        </span>
+        <span className="banner-copy">
+          <strong>주사위 마을</strong>
+          <small>주사위 점을 세고, 집을 사서 꾸며요 · 내 집 {Object.keys(profile.board.owned).length}/{LOT_COUNT}</small>
+        </span>
+        <span className="banner-houses" aria-hidden="true">🏠🏡🏰</span>
+        <span className="play-dot"><PlayIcon /></span>
+      </button>
 
       <section className="level-panel enter" style={{ "--i": 3 }} aria-label="단계" key={`level-${subject}`}>
         <div className="level-progress">
