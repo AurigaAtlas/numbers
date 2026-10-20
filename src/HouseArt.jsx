@@ -4,14 +4,7 @@ export function HouseArt({ level = 1, roof = "#ff6f9f", decor = [], className = 
   return (
     <svg className={`house-art ${className}`} viewBox="0 0 200 180" aria-hidden="true">
       <ellipse cx="100" cy="168" rx="92" ry="10" fill="#5a3a5e" opacity="0.12" />
-      {has("tree") && (
-        <g className="decor-pop">
-          <rect x="16" y="112" width="10" height="50" rx="4" fill="#a0673a" />
-          <circle cx="21" cy="104" r="22" fill="#48b86a" />
-          <circle cx="13" cy="114" r="13" fill="#3fa75e" />
-          <circle cx="15" cy="98" r="6" fill="#6fd28c" />
-        </g>
-      )}
+      {has("tree") && <image className="decor-pop" href="./assets/board/tree.webp" x="0" y="77" width="58" height="90" />}
 
       {level === 1 && (
         <g>
@@ -56,45 +49,14 @@ export function HouseArt({ level = 1, roof = "#ff6f9f", decor = [], className = 
         </g>
       )}
 
-      {has("flag") && (
-        <g className="decor-pop">
-          <line x1={level >= 3 ? 153 : 100} y1={level === 1 ? 46 : 16} x2={level >= 3 ? 153 : 100} y2={level === 1 ? 14 : -14} stroke="#8a6f99" strokeWidth="3" />
-          <path d={`M${level >= 3 ? 153 : 100} ${level === 1 ? 14 : -14} l26 8 l-26 8z`} fill="#ff5c7a" />
-        </g>
-      )}
-      {has("lights") && (
-        <g className="decor-pop">
-          {Array.from({ length: 9 }, (_, i) => {
-            const t = i / 8;
-            const x = level >= 3 ? 64 + t * 72 : 44 + t * 112;
-            const y = level >= 3 ? 80 : level === 2 ? 66 - Math.sin(t * Math.PI) * 6 : 96 - Math.sin(t * Math.PI) * 6;
-            return <circle key={i} cx={x} cy={y} r="4" fill={i % 2 ? "#fff2a8" : "#ffd84a"} className="twinkle-dot" style={{ animationDelay: `${i * 0.15}s` }} />;
-          })}
-        </g>
-      )}
-      {has("fence") && (
-        <g className="decor-pop">
-          <rect x="8" y="150" width="184" height="6" rx="3" fill="#e8d3b3" />
-          {Array.from({ length: 12 }, (_, i) => (
-            <path key={i} d={`M${12 + i * 16} 172 L${12 + i * 16} 144 L${17 + i * 16} 138 L${22 + i * 16} 144 L${22 + i * 16} 172Z`} fill="#ffffff" stroke="#e8d3b3" strokeWidth="2" />
-          )).filter((_, i) => i < 4 || i > 7)}
-        </g>
-      )}
-      {has("flowers") && (
-        <g className="decor-pop">
-          {[[60, 166, "#ff6f9f"], [72, 170, "#ffc93c"], [130, 168, "#9b7bff"], [142, 164, "#ff6f9f"], [152, 170, "#ffc93c"]].map(([x, y, c], i) => (
-            <g key={i}>
-              <circle cx={x} cy={y - 6} r="3" fill={c} />
-              <circle cx={x + 4} cy={y - 3} r="3" fill={c} />
-              <circle cx={x - 4} cy={y - 3} r="3" fill={c} />
-              <circle cx={x} cy={y - 3} r="2" fill="#fff6c2" />
-            </g>
-          ))}
-        </g>
-      )}
-      {has("mailbox") && <text className="decor-pop" x="30" y="170" fontSize="26">📮</text>}
-      {has("dog") && <text className="decor-pop" x="150" y="172" fontSize="30">🐶</text>}
-      {has("cat") && <text className="decor-pop" x={level >= 3 ? 86 : 118} y={level === 1 ? 50 : level === 2 ? 30 : 64} fontSize="24">🐱</text>}
+      {has("flag") && <image className="decor-pop" href="./assets/board/start.webp" x={level >= 3 ? "137" : "84"} y={level === 1 ? "9" : "-12"} width="38" height="58" />}
+      {has("lights") && <image className="decor-pop" href="./assets/board/lights.webp" x="34" y={level >= 3 ? "61" : level === 2 ? "49" : "77"} width="132" height="43" />}
+      {has("fence") && [0, 49, 98, 147].map((x) => <image key={x} className="decor-pop" href="./assets/board/fence.webp" x={x} y="136" width="53" height="40" />)}
+      {has("flowers") && [30, 125].map((x) => <image key={x} className="decor-pop" href="./assets/board/flowers.webp" x={x} y="140" width="50" height="39" />)}
+      {has("mailbox") && <image className="decor-pop" href="./assets/board/mailbox.webp" x="12" y="126" width="39" height="51" />}
+      {has("dog") && <image className="decor-pop" href="./assets/board/dog.webp" x="145" y="130" width="43" height="45" />}
+      {has("cat") && <image className="decor-pop" href="./assets/board/cat.webp" x={level >= 3 ? "81" : "116"} y={level === 1 ? "29" : level === 2 ? "8" : "44"} width="37" height="38" />}
+
     </svg>
   );
 }
