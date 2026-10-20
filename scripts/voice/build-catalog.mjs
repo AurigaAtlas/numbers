@@ -12,7 +12,7 @@ const load = (path) => server.ssrLoadModule(path);
 const { say, splitSpeech, praise } = await load("/src/speech.js");
 const { CONSONANTS, VOWELS, words, compose, hangulLevels } = await load("/src/hangul.js");
 const { levels, praise: gamePraise } = await load("/src/data.js");
-const { tiles, decorItems, houseNames, PASS_START_REWARD } = await load("/src/board.js");
+const { tiles, decorItems, houseNames, personNames, robotNames, MAX_MONEY, PASS_START_REWARD, PIGGY_FEE, QUIZ_REWARD, SCHOOL_REWARD } = await load("/src/board.js");
 const { initialOf } = await load("/src/hangul.js");
 
 const pieces = new Set();
@@ -46,7 +46,7 @@ for (const a of range(1, 15)) {
 for (const step of [1, 2, -1, -2]) add(say.missingHint(step));
 for (let streak = 3; streak <= 60; streak += 3) add(say.combo(streak));
 [...praise, ...gamePraise].forEach(add);
-[say.secondTryRight, say.tryAgain, say.preview, say.breakTime, say.breakOver, say.missionDone, say.countTogether, say.addHint, say.quizRight, say.villageDone, say.park].forEach(add);
+[say.secondTryRight, say.tryAgain, say.preview, say.breakTime, say.breakOver, say.missionDone, say.countTogether, say.addHint, say.quizRight].forEach(add);
 [...levels, ...hangulLevels].forEach((level) => add(say.levelUp(level.name)));
 
 // Hangul letters, syllables and words.
@@ -79,20 +79,41 @@ for (const entry of words) {
 }
 
 // 주사위 마을.
+const lots = tiles.filter((t) => t.type === "lot");
+const names = [...personNames, ...robotNames];
 add(say.diceAsk(true));
 add(say.diceAsk(false));
 for (const sum of range(2, 12)) {
   add(say.diceRight(sum));
   add(say.diceWrong(sum));
+  add(say.robotMove(sum));
 }
-add(say.passStart(PASS_START_REWARD));
-for (const tile of tiles.filter((t) => t.type === "lot")) {
-  add(say.homeAgain(tile));
+for (const name of names) {
+  add(say.turn(name));
+  add(say.sleeping(name));
+  add(say.broke(name));
+  add(say.winner(name));
+  for (const n of range(1, 15)) add(say.received(name, n));
+  for (const tile of lots) add(say.toll(name, tile, tile.price));
+}
+for (const tile of lots) {
   add(say.lot(tile, initialOf(tile.word)));
+  add(say.lotPrice(tile.price));
   add(say.newHouse(tile));
+  add(say.homeAgain(tile));
+  add(say.soldHouse(tile));
 }
-for (const amount of [5, 10, 15]) add(say.gift(amount));
-for (const n of range(1, 99)) add(say.needCoins(n));
+// Tolls go up to 15원 (a 5원 castle); pots and treasure can reach the money limit.
+for (const n of range(1, 15)) {
+  add(say.payAsk(n));
+  add(say.paid(n));
+  add(say.needMoney(n));
+}
+for (const n of range(1, MAX_MONEY)) add(say.treasure(n));
+for (const n of [1, QUIZ_REWARD, SCHOOL_REWARD]) add(say.quizReward(n));
+add(say.passStart(PASS_START_REWARD));
+add(say.piggy(PIGGY_FEE));
+[say.doubles, say.island, say.helpRobot, say.walletFull, say.gameOver, say.tie].forEach(add);
 decorItems.forEach((item) => add(say.decorPlaced(item.name)));
 houseNames.slice(1).forEach((name) => add(say.upgraded(name)));
 
