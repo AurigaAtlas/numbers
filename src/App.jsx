@@ -7,23 +7,15 @@ import { GameScreen } from "./games";
 import {
   BackIcon,
   BagIcon,
-  BalloonArt,
   BookIcon,
   CheckIcon,
   CloudShape,
   CoinIcon,
-  CompareArt,
   FlameIcon,
   GearIcon,
   GiftIcon,
-  HBuildArt,
   HeartShape,
-  HListenArt,
-  HPictureArt,
-  HTraceArt,
   LockIcon,
-  MathArt,
-  MissingArt,
   PlayIcon,
   SoundOffIcon,
   SpeakerIcon,
@@ -89,17 +81,6 @@ const defaultSettings = {
 };
 
 const confettiColors = ["#FF5C7A", "#FFC62E", "#3CC47C", "#3D8BFF", "#A07CFF", "#FF8A3D", "#22B8CF"];
-const gameArt = {
-  compare: CompareArt,
-  missing: MissingArt,
-  math: MathArt,
-  balloon: BalloonArt,
-  hListen: HListenArt,
-  hPicture: HPictureArt,
-  hBuild: HBuildArt,
-  hTrace: HTraceArt
-};
-
 const allGames = [...gameCards, ...hangulGameCards];
 
 // Numbers and Hangul level up separately; both live in profile.progress.
@@ -1390,7 +1371,7 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
       <MissionPanel daily={ensureDaily(profile.daily, todayKey())} onClaim={onClaimMissions} />
 
       <button className="board-banner enter" style={{ "--i": 3 }} onClick={onBoard}>
-        <img className="banner-illustration" src="./assets/game-dice-village.svg" alt="" aria-hidden="true" />
+        <img className="banner-illustration" src="./assets/game-dice-village-storybook-v2.webp" alt="" aria-hidden="true" />
         <span className="banner-copy">
           <strong>주사위 마을</strong>
           <small>주사위 점을 세고, 집을 사서 꾸며요 · 내 집 {Object.keys(profile.board.owned).length}/{LOT_COUNT}</small>
@@ -1443,7 +1424,6 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
 
       <section className={`game-grid games-${track.games.length}`} aria-label="게임 목록" key={`games-${subject}`}>
         {track.games.map((game, index) => {
-          const Art = game.art ? gameArt[game.art] : null;
           return (
             <button
               key={game.id}
@@ -1452,7 +1432,7 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
               onClick={() => onStart(game.id)}
             >
               <span className="game-art">
-                {Art ? <Art /> : <img src={game.image} alt="" aria-hidden="true" />}
+                <img src={game.image} alt="" aria-hidden="true" />
               </span>
               <span className="game-copy">
                 <strong>{game.title}</strong>
