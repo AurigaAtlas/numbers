@@ -188,7 +188,7 @@ export const gameCards = [
     title: "어느 쪽이 많을까",
     subtitle: "많은 쪽, 적은 쪽을 골라요",
     intro: "두 쪽을 잘 비교해봐!",
-    art: "compare",
+    image: "./assets/game-compare.svg",
     color: "sun",
     reward: 9
   },
@@ -197,7 +197,7 @@ export const gameCards = [
     title: "빈칸 채우기",
     subtitle: "빠진 숫자를 찾아요",
     intro: "물음표 자리에 어떤 숫자가 올까?",
-    art: "missing",
+    image: "./assets/game-missing.svg",
     color: "pink",
     reward: 10
   },
@@ -206,7 +206,7 @@ export const gameCards = [
     title: "더하기 빼기",
     subtitle: "그림으로 셈을 해요",
     intro: "모두 몇 개가 될까?",
-    art: "math",
+    image: "./assets/game-math.svg",
     color: "teal",
     reward: 12
   },
@@ -215,7 +215,7 @@ export const gameCards = [
     title: "풍선 터뜨리기",
     subtitle: "날아가는 숫자 풍선을 잡아요",
     intro: "숫자 풍선을 콕 눌러서 터뜨려봐!",
-    art: "balloon",
+    image: "./assets/game-balloon.svg",
     color: "peach",
     reward: 12
   }

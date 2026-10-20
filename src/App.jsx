@@ -1390,15 +1390,11 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
       <MissionPanel daily={ensureDaily(profile.daily, todayKey())} onClaim={onClaimMissions} />
 
       <button className="board-banner enter" style={{ "--i": 3 }} onClick={onBoard}>
-        <span className="banner-dice" aria-hidden="true">
-          <i className="mini-die d1"><b /><b /><b /></i>
-          <i className="mini-die d2"><b /><b /></i>
-        </span>
+        <img className="banner-illustration" src="./assets/game-dice-village.svg" alt="" aria-hidden="true" />
         <span className="banner-copy">
           <strong>주사위 마을</strong>
           <small>주사위 점을 세고, 집을 사서 꾸며요 · 내 집 {Object.keys(profile.board.owned).length}/{LOT_COUNT}</small>
         </span>
-        <span className="banner-houses" aria-hidden="true">🏠🏡🏰</span>
         <span className="play-dot"><PlayIcon /></span>
       </button>
 
