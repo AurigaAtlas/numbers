@@ -371,7 +371,7 @@ export function Board({
           <h2>주사위 마을</h2>
           <p className="eyebrow">주사위 점을 세고, 집을 사서 꾸며요</p>
         </div>
-        <span className="village-chip">🏠 {ownedCount} / {LOT_COUNT}</span>
+        <span className="village-chip"><HouseArt level={1} className="village-chip-house" /> {ownedCount} / {LOT_COUNT}</span>
       </div>
 
       <div className="board-grid">
@@ -388,12 +388,12 @@ export function Board({
               {owned ? (
                 <HouseArt level={owned.level} roof={owned.roof} decor={owned.decor} className="tile-house" />
               ) : (
-                <span className="tile-emoji" aria-hidden="true">{tile.emoji}</span>
+                <img className="tile-image" src={tile.image} alt="" aria-hidden="true" />
               )}
               <span className="tile-name">{tile.type === "lot" ? tile.word : tile.name}</span>
               {tile.type === "lot" && !owned && <span className="tile-price"><CoinIcon />{tile.price}</span>}
               {isHere && (
-                <span className="board-token" key={`${position}-${step}`} ref={tokenRef} aria-label="내 말">👸</span>
+                <span className="board-token" key={`${position}-${step}`} ref={tokenRef} aria-label="내 말"><img src="./assets/board/token.webp" alt="" /></span>
               )}
             </div>
           );
@@ -414,7 +414,7 @@ export function Board({
 
           {phase === "ready" && (
             <button className="chunky-button roll-button" onClick={roll}>
-              🎲 주사위 굴리기
+              <span className="roll-button-icon" aria-hidden="true"><i /><i /><i /></span> 주사위 굴리기
             </button>
           )}
 
@@ -456,7 +456,7 @@ export function Board({
           <section className="sheet board-sheet" role="dialog" aria-modal="true" aria-label={event.tile.name}>
             {event.kind === "lot" && (
               <div className="lot-card" style={{ "--group": groupColors[event.tile.group] }}>
-                <span className="lot-emoji" aria-hidden="true">{event.tile.emoji}</span>
+                <span className="lot-emoji" aria-hidden="true"><img src={event.tile.image} alt="" /></span>
                 <h3 className="lot-name">
                   <b className={toneClass(event.tile.group + 1)}>{event.tile.word[0]}</b>
                   {event.tile.word.slice(1)} 마을
@@ -474,7 +474,7 @@ export function Board({
                     className={`chunky-button buy-house ${coins < event.tile.price ? "is-short" : ""}`}
                     onClick={(e) => buyLot(event.tile, e.currentTarget)}
                   >
-                    {coins >= event.tile.price ? "🏠 집 사기" : <><LockIcon />{event.tile.price - coins}개 더 모아요</>}
+                    {coins >= event.tile.price ? "집 사기" : <><LockIcon />{event.tile.price - coins}개 더 모아요</>}
                   </button>
                   <button className="chunky-button later-button" onClick={closeEvent}>지나가기</button>
                 </div>
@@ -514,7 +514,7 @@ export function Board({
                           onClick={(e) => buyDecor(event.tile, item, e.currentTarget)}
                           disabled={placed}
                         >
-                          <span className="decor-emoji">{item.emoji}</span>
+                          <img className="decor-image" src={item.image} alt="" aria-hidden="true" />
                           <span>{item.name}</span>
                           <small>{placed ? "완료" : <><CoinIcon />{item.price}</>}</small>
                         </button>
@@ -539,7 +539,7 @@ export function Board({
             {event.kind === "quiz" && quiz && (
               <div className="board-quiz">
                 <p className="quiz-title">
-                  {event.tile.emoji === "가" ? <span className="quiz-badge">가</span> : <span aria-hidden="true">{event.tile.emoji}</span>}
+                  <img className="quiz-title-image" src={event.tile.image} alt="" aria-hidden="true" />
                   {event.tile.name} · 맞히면 <CoinIcon />{event.reward}
                 </p>
                 <div className="round quiz-round" key={quiz.id}>
@@ -553,7 +553,7 @@ export function Board({
 
             {(event.kind === "park" || event.kind === "gift" || event.kind === "start") && (
               <div className="simple-event">
-                <span className="simple-emoji" aria-hidden="true">{event.tile.emoji}</span>
+                <img className="simple-image" src={event.tile.image} alt="" aria-hidden="true" />
                 <h3>{event.tile.name}</h3>
                 <p>
                   {event.kind === "park" && <>신나게 놀았어요! <CoinIcon />+5</>}
