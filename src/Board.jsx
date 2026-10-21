@@ -718,7 +718,7 @@ export function Board({
     if (tile.type === "island") {
       commit(withPlayer(g, me, { skip: 1 }));
       extraRoll.current = false;
-      showInfo({ emoji: "🏝️", title: "꿀잠 섬", text: "다음 차례에 한 번 쉬어요. 쿨쿨!" }, `${intro}${lines.island}`);
+      showInfo({ emoji: tile.emoji, image: tile.image, title: "꿀잠 섬", text: "다음 차례에 한 번 쉬어요. 쿨쿨!" }, `${intro}${lines.island}`);
       return;
     }
 
@@ -726,7 +726,7 @@ export function Board({
       const fee = Math.min(PIGGY_FEE, money);
       say(`${intro}${lines.piggy(PIGGY_FEE)}`);
       if (fee > 0) showEvent({ kind: "pay", reason: "piggy", tile, amount: fee });
-      else showInfo({ emoji: "🐷", title: "저금통", text: "낼 돈이 없어요. 괜찮아요!" }, "");
+      else showInfo({ emoji: tile.emoji, image: tile.image, title: "저금통", text: "낼 돈이 없어요. 괜찮아요!" }, "");
       return;
     }
 
@@ -947,7 +947,7 @@ export function Board({
           {game && !game.over && <p className="eyebrow">{Math.min(game.round, game.maxRounds)} / {game.maxRounds}바퀴 · 집 {builtCount}/{LOT_COUNT}</p>}
         </div>
         {game && (
-          <span className="pot-chip" title="저금통">🐷 <Won n={game.pot} /></span>
+          <span className="pot-chip" title="저금통"><img src="./assets/board/piggy.webp" alt="" aria-hidden="true" /> <Won n={game.pot} /></span>
         )}
         {game && phase !== "results" && (
           <button
@@ -1132,7 +1132,7 @@ export function Board({
                   event.reason === "toll"
                     ? `${game.players[event.to].token} ${possessive(game.players[event.to].name)} ${event.tile.name}! ${event.broke ? `가진 돈 ${event.amount}원을 모두 내요` : `통행료 ${event.amount}원`}`
                     : event.reason === "piggy"
-                      ? `🐷 저금통에 ${event.amount}원을 넣어요`
+                      ? <><img className="pay-title-image" src={event.tile.image} alt="" aria-hidden="true" /> 저금통에 {event.amount}원을 넣어요</>
                       : event.reason === "upgrade"
                         ? `${withRo(houseNames[house?.level ?? 1])} 키우기 · ${event.amount}원`
                         : `🏠 ${event.tile.name} 집값 ${event.amount}원`

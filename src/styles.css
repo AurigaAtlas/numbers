@@ -3474,6 +3474,12 @@ h2 {
   white-space: nowrap;
 }
 
+.pot-chip img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .new-game-button {
   color: var(--ink-soft);
 }
@@ -4074,6 +4080,13 @@ button.coin-slot:not(:disabled):active {
 .pay-title {
   margin: 0;
   font-size: 1.5rem;
+}
+
+.pay-title-image {
+  width: 1.5em;
+  height: 1.5em;
+  object-fit: contain;
+  vertical-align: middle;
 }
 
 .pay-tray {
