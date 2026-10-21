@@ -63,7 +63,9 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
-  if (request.mode === "navigate") {
+  // Pages (and the app's "is there a newer version?" check) always try the network first.
+  const isPage = url.origin === self.location.origin && (url.pathname.endsWith("/") || url.pathname.endsWith(".html"));
+  if (request.mode === "navigate" || isPage) {
     event.respondWith(networkFirst(request, BUILD_CACHE).catch(() => caches.match(new URL("./", self.registration.scope))));
     return;
   }

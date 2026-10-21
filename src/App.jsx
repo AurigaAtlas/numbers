@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gameCards, hangulGameCards, levels, praise, shopCategories, shopItems } from "./data";
 import { Board } from "./Board";
-import { LOT_COUNT, normalizeBoard } from "./board";
+import { normalizeBoard } from "./board";
 import { Dex, dexOpenLine } from "./Dex";
 import { GameScreen } from "./games";
 import {
@@ -797,22 +797,14 @@ export default function App() {
     sfx.tap();
     clearTimers();
     setScreen("board");
-    setMessage("주사위를 굴려서 마을을 여행해봐!");
+    setMessage("친구랑 가족이랑 주사위 마을에서 놀자!");
   }
 
-  function boardEarn(amount, element) {
+  // Shop coins for finishing a board game; the wallet is hidden behind the board, so no flying coins.
+  function boardEarn(amount) {
     if (!amount) return;
     updateProfile((current) => ({ ...current, coins: current.coins + amount }));
-    coinsToWallet(element ? centerOf(element) : viewportCenter(), Math.min(10, Math.max(2, Math.ceil(amount / 3))));
-  }
-
-  function boardSpend(amount, element) {
-    if (profileRef.current.coins < amount) return false;
-    updateProfile((current) => ({ ...current, coins: current.coins - amount }));
-    sfx.buy();
-    flyCoins({ from: centerOf(walletRef.current), to: centerOf(element) ?? viewportCenter(), count: Math.min(8, Math.ceil(amount / 5)) });
-    bump(walletRef.current);
-    return true;
+    sfx.coin();
   }
 
   function boardChange(change) {
@@ -1088,15 +1080,12 @@ export default function App() {
           {screen === "board" && (
             <Board
               board={profile.board}
-              coins={profile.coins}
               numbersLevel={levels[profile.progress.playLevel - 1]}
               hangulLevel={hangulLevels[profile.progress.hangulPlayLevel - 1]}
               mastery={profile.mastery}
               say={say}
-              setMessage={setMessage}
               onBack={goHome}
               onEarn={boardEarn}
-              onSpend={boardSpend}
               onBoardChange={boardChange}
               onLearn={boardLearn}
               onCelebrate={triggerCelebration}
@@ -1374,7 +1363,11 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
         <img className="banner-illustration" src="./assets/game-dice-village-storybook-v2.webp" alt="" aria-hidden="true" />
         <span className="banner-copy">
           <strong>주사위 마을</strong>
-          <small>주사위 점을 세고, 집을 사서 꾸며요 · 내 집 {Object.keys(profile.board.owned).length}/{LOT_COUNT}</small>
+          <small>
+            {profile.board.game && !profile.board.game.over
+              ? `이어서 하기 · ${profile.board.game.players.map((player) => player.name).join(", ")}`
+              : "2~4명이 함께! 주사위를 세고 집을 지어요"}
+          </small>
         </span>
         <span className="play-dot"><PlayIcon /></span>
       </button>

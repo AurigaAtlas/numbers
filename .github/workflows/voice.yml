@@ -24,6 +24,8 @@ jobs:
     timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -54,6 +56,17 @@ jobs:
             exit 0
           fi
           git commit -m "Record voice pack with MeloTTS"
-          git push
+          # Recording takes a while; the branch may have moved on in the meantime.
+          pushed=false
+          for attempt in 1 2 3; do
+            if git pull --rebase origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME"; then
+              pushed=true
+              break
+            fi
+            sleep 10
+          done
+          $pushed || { echo "Could not push the recorded clips."; exit 1; }
           # Pushes made with the workflow token do not start other workflows, so deploy explicitly.
-          gh workflow run deploy.yml --ref "$GITHUB_REF_NAME"
+          if [ "$GITHUB_REF_NAME" = "${{ github.event.repository.default_branch }}" ]; then
+            gh workflow run deploy.yml --ref "$GITHUB_REF_NAME"
+          fi
