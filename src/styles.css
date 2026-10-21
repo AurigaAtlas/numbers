@@ -4198,10 +4198,6 @@ button.coin-slot:not(:disabled):active {
   font-size: 1.2rem;
 }
 
-.decor-title.big {
-  color: var(--ink);
-  font-size: 1.3rem;
-}
 
 /* --- Setup and results --- */
 .board-setup,
@@ -4626,6 +4622,19 @@ button.coin-slot:not(:disabled):active {
   align-items: start;
 }
 
+.home-panel {
+  display: grid;
+  align-self: center;
+  align-content: center;
+  gap: 16px;
+}
+
+.home-message {
+  margin: 0;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
 .house-stage {
   position: relative;
   display: grid;
@@ -4670,98 +4679,21 @@ button.coin-slot:not(:disabled):active {
   height: 22px;
 }
 
-.decor-panel {
-  display: grid;
-  gap: 10px;
-}
 
-.decor-title {
-  color: var(--ink-soft);
-  font-size: 1rem;
-}
 
-.roof-swatches {
-  display: flex;
-  gap: 10px;
-}
 
-.roof-swatch {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  color: #ffffff;
-  box-shadow: 0 4px 0 rgba(46, 42, 79, 0.18);
-}
 
-.roof-swatch.is-active {
-  box-shadow: 0 0 0 4px #ffffff, 0 0 0 7px var(--ink);
-}
 
-.roof-swatch svg {
-  width: 22px;
-  height: 22px;
-}
 
-.decor-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
 
-.decor-item {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  padding: 8px 4px;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 4px 0 rgba(46, 42, 79, 0.1), inset 0 0 0 2px #f1eff8;
-  font-size: 0.92rem;
-}
 
-.decor-emoji {
-  font-size: 1.8rem;
-  line-height: 1.1;
-}
 
-.decor-image {
-  display: block;
-  width: 42px;
-  height: 38px;
-  object-fit: contain;
-}
 
-.decor-item small {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  color: #9a6400;
-  font-size: 0.85rem;
-}
 
-.decor-item small .coin-icon {
-  width: 16px;
-  height: 16px;
-}
 
-.decor-item.is-placed {
-  background: #e3f8ee;
-  box-shadow: inset 0 0 0 2px var(--mint);
-}
 
-.decor-item.is-placed small {
-  color: var(--mint-deep);
-}
 
-.decor-item.is-short {
-  opacity: 0.55;
-}
 
-.decor-item:active:not(:disabled) {
-  transform: scale(0.94);
-}
 
 .decor-pop {
   animation: pop-in 520ms var(--spring) backwards;

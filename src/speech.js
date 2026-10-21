@@ -89,7 +89,7 @@ export const say = {
   paid: (n) => `${sinoWord(n)} 원을 냈어요!`,
   needMoney: (n) => `돈이 ${sinoWord(n)} 원 모자라요.`,
   newHouse: (tile) => `${tile.name}에 집을 지었어요!`,
-  homeAgain: (tile) => `${tile.name}, 내 집에 왔어요! 예쁘게 꾸며볼까요?`,
+  homeAgain: (tile, canGrow) => `${tile.name}, 내 집에 왔어요!${canGrow ? " 집을 더 키울까요?" : ""}`,
   toll: (owner, tile, n) => `${possessive(owner)} ${tile.name}이에요! 통행료 ${sinoWord(n)} 원을 내요.`,
   received: (name, n) => `${name}, ${sinoWord(n)} 원을 받았어요!`,
   soldHouse: (tile) => `돈이 모자라서 ${tile.name} 집을 팔았어요.`,
@@ -104,7 +104,6 @@ export const say = {
   gameOver: "게임 끝! 누가 제일 많이 모았을까요?",
   winner: (name) => `${name} 우승! 모두 잘했어요!`,
   tie: "똑같이 모았어요! 모두 우승!",
-  decorPlaced: (name) => `${josa(name, "을", "를")} 놓았어요!`,
   // Written out ("이층") so recorded voices do not have to guess how to read "2층".
   upgraded: (houseName) => `우와! ${josa(houseName.replace(/2층/g, "이층"), "이", "가")} 되었어요!`,
   quizRight: "정답이에요!"

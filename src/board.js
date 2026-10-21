@@ -45,20 +45,7 @@ export const tiles = [
 export const LOT_COUNT = tiles.filter((tile) => tile.type === "lot").length;
 
 export const groupColors = ["#ff8fb8", "#ffc93c", "#5cc77d", "#5ab8ff"];
-export const roofColors = ["#ff6f9f", "#ff8a3d", "#9b7bff", "#3d8bff", "#36bf77"];
 export const playerColors = ["#ff6f9f", "#3d8bff", "#2fb67c", "#ff9a1f"];
-
-// Decorating is free: it is the reward for coming home.
-export const decorItems = [
-  { id: "flowers", name: "꽃밭", image: boardImage("flowers") },
-  { id: "fence", name: "울타리", image: boardImage("fence") },
-  { id: "tree", name: "나무", image: boardImage("tree") },
-  { id: "flag", name: "깃발", image: boardImage("start") },
-  { id: "lights", name: "별 조명", image: boardImage("lights") },
-  { id: "mailbox", name: "우체통", image: boardImage("mailbox") },
-  { id: "dog", name: "강아지", image: boardImage("dog") },
-  { id: "cat", name: "고양이", image: boardImage("cat") }
-];
 
 export const houseNames = ["오두막", "2층 집", "성"];
 
