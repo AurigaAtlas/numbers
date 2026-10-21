@@ -738,13 +738,13 @@ export function Board({
       sfx.coin();
       onCelebrate(null, `+${found}원`);
       showInfo(
-        { emoji: "🎁", title: "보물 상자", text: g.pot > 0 ? `저금통에 모인 돈 ${found}원을 모두 가져가요!` : "작은 동전 1원을 찾았어요!", coins: found },
+        { emoji: "🎁", image: tile.image, title: "보물 상자", text: g.pot > 0 ? `저금통에 모인 돈 ${found}원을 모두 가져가요!` : "작은 동전 1원을 찾았어요!", coins: found },
         `${intro}${lines.treasure(found)}${after === MAX_MONEY ? ` ${lines.walletFull}` : ""}`
       );
       return;
     }
 
-    showInfo({ emoji: "🚩", title: "출발", text: `출발점이에요! 용돈 ${PASS_START_REWARD}원을 받았어요.`, coins: PASS_START_REWARD }, intro.trim());
+    showInfo({ emoji: "🚩", image: tile.image, title: "출발", text: `출발점이에요! 용돈 ${PASS_START_REWARD}원을 받았어요.`, coins: PASS_START_REWARD }, intro.trim());
   }
 
   function brokeInfo(index) {
@@ -995,7 +995,9 @@ export function Board({
                     {owned ? (
                       <HouseArt level={owned.level} roof={owned.roof} decor={owned.decor} className="tile-house" />
                     ) : (
-                      <span className="tile-emoji" aria-hidden="true">{tile.emoji}</span>
+                      tile.image
+                        ? <img className="tile-image" src={tile.image} alt="" aria-hidden="true" />
+                        : <span className="tile-emoji" aria-hidden="true">{tile.emoji}</span>
                     )}
                     <span className="tile-name">{tile.type === "lot" ? tile.word : tile.name}</span>
                     {tile.type === "lot" && (
@@ -1041,7 +1043,9 @@ export function Board({
                   current.skip > 0 ? (
                     <button className="chunky-button roll-button" onClick={wakeUp}>😴 쉬고 넘기기</button>
                   ) : (
-                    <button className="chunky-button roll-button" onClick={roll}>🎲 주사위 굴리기</button>
+                    <button className="chunky-button roll-button" onClick={roll}>
+                      <span className="roll-button-icon" aria-hidden="true"><i /><i /><i /></span> 주사위 굴리기
+                    </button>
                   )
                 )}
 
@@ -1079,7 +1083,7 @@ export function Board({
           <section className="sheet board-sheet" role="dialog" aria-modal="true" aria-label={event.tile?.name ?? event.title}>
             {event.kind === "lot" && (
               <div className="lot-card" style={{ "--group": groupColors[event.tile.group] }}>
-                <span className="lot-emoji" aria-hidden="true">{event.tile.emoji}</span>
+                <span className="lot-emoji" aria-hidden="true"><img src={event.tile.image} alt="" /></span>
                 <h3 className="lot-name">
                   <b className={toneClass(event.tile.group + 1)}>{event.tile.word[0]}</b>
                   {event.tile.word.slice(1)} 마을
@@ -1183,7 +1187,7 @@ export function Board({
                                 if (!placed) say(lines.decorPlaced(item.name));
                               }}
                             >
-                              <span className="decor-emoji">{item.emoji}</span>
+                              <img className="decor-image" src={item.image} alt="" aria-hidden="true" />
                               <span>{item.name}</span>
                             </button>
                           );
@@ -1209,7 +1213,7 @@ export function Board({
             {event.kind === "quiz" && quiz && (
               <div className="board-quiz">
                 <p className="quiz-title">
-                  {event.tile.emoji === "가" ? <span className="quiz-badge">가</span> : <span aria-hidden="true">{event.tile.emoji}</span>}
+                  <img className="quiz-title-image" src={event.tile.image} alt="" aria-hidden="true" />
                   {eventIsRobot ? `${josa(current.name, "을", "를")} 도와줘요!` : event.tile.name} · 맞히면 <Won n={event.reward} />
                 </p>
                 <div className="round quiz-round" key={quiz.id}>
@@ -1223,7 +1227,9 @@ export function Board({
 
             {event.kind === "info" && (
               <div className="simple-event">
-                <span className="simple-emoji" aria-hidden="true">{event.emoji}</span>
+                {event.image
+                  ? <img className="simple-image" src={event.image} alt="" aria-hidden="true" />
+                  : <span className="simple-emoji" aria-hidden="true">{event.emoji}</span>}
                 <h3>{event.title}</h3>
                 <p>{event.text}</p>
                 {event.coins ? <CoinRows count={event.coins} small /> : null}

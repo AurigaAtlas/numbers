@@ -10,29 +10,35 @@ export const QUIZ_REWARD = 2;
 export const SCHOOL_REWARD = 3;
 export const FINISH_COINS = 15; // shop coins for finishing a game
 
-const lot = (id, word, emoji, group, price) => ({ id, type: "lot", word, emoji, group, price, name: `${word} 마을` });
+const boardImage = (name) => `./assets/board/${name}.webp`;
+const lotImages = { apple: "./assets/object-apple.webp", star: "./assets/object-star-storybook-v1.webp" };
+const lot = (id, word, emoji, group, price) => ({
+  id, type: "lot", word, emoji, group, price, name: `${word} 마을`, image: lotImages[id] ?? boardImage(id)
+});
+const numberCard = "./assets/game-order.webp";
+const letterCard = "./assets/game-h-build-storybook-v2.webp";
 
 // Clockwise from the top-left corner: top row, right column, bottom row, left column.
 export const tiles = [
-  { id: "start", type: "start", name: "출발", emoji: "🚩" },
+  { id: "start", type: "start", name: "출발", emoji: "🚩", image: boardImage("start") },
   lot("apple", "사과", "🍎", 0, 1),
   lot("grape", "포도", "🍇", 0, 1),
-  { id: "num-1", type: "numberQuiz", name: "숫자 카드", emoji: "🔢" },
+  { id: "num-1", type: "numberQuiz", name: "숫자 카드", emoji: "🔢", image: numberCard },
   lot("strawberry", "딸기", "🍓", 0, 2),
   { id: "island", type: "island", name: "꿀잠 섬", emoji: "🏝️" },
   lot("butterfly", "나비", "🦋", 1, 2),
   lot("sunflower", "해바라기", "🌻", 1, 3),
-  { id: "ko-1", type: "hangulQuiz", name: "글자 카드", emoji: "가" },
+  { id: "ko-1", type: "hangulQuiz", name: "글자 카드", emoji: "가", image: letterCard },
   lot("banana", "바나나", "🍌", 1, 3),
-  { id: "treasure", type: "treasure", name: "보물 상자", emoji: "🎁" },
+  { id: "treasure", type: "treasure", name: "보물 상자", emoji: "🎁", image: boardImage("gift") },
   lot("tree", "나무", "🌳", 2, 3),
   lot("rabbit", "토끼", "🐰", 2, 4),
   { id: "piggy", type: "piggy", name: "저금통", emoji: "🐷" },
   lot("duck", "오리", "🦆", 2, 4),
-  { id: "school", type: "school", name: "학교", emoji: "🏫" },
+  { id: "school", type: "school", name: "학교", emoji: "🏫", image: boardImage("school") },
   lot("whale", "고래", "🐳", 3, 4),
   lot("star", "별", "⭐", 3, 5),
-  { id: "ko-2", type: "hangulQuiz", name: "글자 카드", emoji: "가" },
+  { id: "ko-2", type: "hangulQuiz", name: "글자 카드", emoji: "가", image: letterCard },
   lot("rainbow", "무지개", "🌈", 3, 5)
 ];
 
@@ -44,14 +50,14 @@ export const playerColors = ["#ff6f9f", "#3d8bff", "#2fb67c", "#ff9a1f"];
 
 // Decorating is free: it is the reward for coming home.
 export const decorItems = [
-  { id: "flowers", name: "꽃밭", emoji: "🌷" },
-  { id: "fence", name: "울타리", emoji: "🧱" },
-  { id: "tree", name: "나무", emoji: "🌳" },
-  { id: "flag", name: "깃발", emoji: "🚩" },
-  { id: "lights", name: "별 조명", emoji: "✨" },
-  { id: "mailbox", name: "우체통", emoji: "📮" },
-  { id: "dog", name: "강아지", emoji: "🐶" },
-  { id: "cat", name: "고양이", emoji: "🐱" }
+  { id: "flowers", name: "꽃밭", image: boardImage("flowers") },
+  { id: "fence", name: "울타리", image: boardImage("fence") },
+  { id: "tree", name: "나무", image: boardImage("tree") },
+  { id: "flag", name: "깃발", image: boardImage("start") },
+  { id: "lights", name: "별 조명", image: boardImage("lights") },
+  { id: "mailbox", name: "우체통", image: boardImage("mailbox") },
+  { id: "dog", name: "강아지", image: boardImage("dog") },
+  { id: "cat", name: "고양이", image: boardImage("cat") }
 ];
 
 export const houseNames = ["오두막", "2층 집", "성"];

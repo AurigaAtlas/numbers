@@ -188,7 +188,7 @@ export const gameCards = [
     title: "어느 쪽이 많을까",
     subtitle: "많은 쪽, 적은 쪽을 골라요",
     intro: "두 쪽을 잘 비교해봐!",
-    art: "compare",
+    image: "./assets/game-compare-storybook-v2.webp",
     color: "sun",
     reward: 9
   },
@@ -197,7 +197,7 @@ export const gameCards = [
     title: "빈칸 채우기",
     subtitle: "빠진 숫자를 찾아요",
     intro: "물음표 자리에 어떤 숫자가 올까?",
-    art: "missing",
+    image: "./assets/game-missing-storybook-v2.webp",
     color: "pink",
     reward: 10
   },
@@ -206,7 +206,7 @@ export const gameCards = [
     title: "더하기 빼기",
     subtitle: "그림으로 셈을 해요",
     intro: "모두 몇 개가 될까?",
-    art: "math",
+    image: "./assets/game-math-storybook-v2.webp",
     color: "teal",
     reward: 12
   },
@@ -215,7 +215,7 @@ export const gameCards = [
     title: "풍선 터뜨리기",
     subtitle: "날아가는 숫자 풍선을 잡아요",
     intro: "숫자 풍선을 콕 눌러서 터뜨려봐!",
-    art: "balloon",
+    image: "./assets/game-balloon-storybook-v2.webp",
     color: "peach",
     reward: 12
   }
@@ -315,7 +315,7 @@ export const hangulGameCards = [
     title: "소리 듣고 찾기",
     subtitle: "소리를 듣고 글자를 골라요",
     intro: "잘 듣고 맞는 글자를 눌러봐!",
-    art: "hListen",
+    image: "./assets/game-h-listen-storybook-v2.webp",
     color: "coral",
     reward: 9
   },
@@ -325,7 +325,7 @@ export const hangulGameCards = [
     title: "그림 글자",
     subtitle: "그림을 보고 글자를 찾아요",
     intro: "그림을 보고 맞는 글자를 찾아봐!",
-    art: "hPicture",
+    image: "./assets/game-h-picture-storybook-v2.webp",
     color: "mint",
     reward: 9
   },
@@ -335,7 +335,7 @@ export const hangulGameCards = [
     title: "글자 만들기",
     subtitle: "자음과 모음을 합쳐요",
     intro: "두 친구를 합치면 어떤 글자가 될까?",
-    art: "hBuild",
+    image: "./assets/game-h-build-storybook-v2.webp",
     color: "sky",
     reward: 10
   },
@@ -345,7 +345,7 @@ export const hangulGameCards = [
     title: "따라 쓰기",
     subtitle: "손가락으로 글자를 써요",
     intro: "회색 글자를 손가락으로 따라 써봐!",
-    art: "hTrace",
+    image: "./assets/game-h-trace-storybook-v2.webp",
     color: "lilac",
     reward: 12
   }
