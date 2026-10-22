@@ -5,7 +5,7 @@ import { tileState } from "./gameParts";
 import { HangulBuild, HangulPicture } from "./hangulGames";
 import { HouseArt } from "./HouseArt";
 import { initialOf, letterName, makeHangulRound } from "./hangul";
-import { BackIcon, CheckIcon } from "./icons";
+import { BackIcon } from "./icons";
 import {
   BOARD_SIZE,
   FINISH_COINS,
@@ -17,7 +17,6 @@ import {
   SCHOOL_REWARD,
   addMoney,
   createGame,
-  decorItems,
   diceFaces,
   gameLengths,
   groupColors,
@@ -28,7 +27,6 @@ import {
   personNames,
   playerColors,
   robotNames,
-  roofColors,
   tileById,
   tileCell,
   tiles,
@@ -359,7 +357,7 @@ function Results({ game, say, onAgain, onHome }) {
                 <CoinRows count={player.money} small />
                 <span className="results-houses">
                   {housesOf(game, index).map(([id, house]) => (
-                    <HouseArt key={id} level={house.level} roof={house.roof} decor={[]} className="mini-house" />
+                    <HouseArt key={id} level={house.level} roof={house.roof} className="mini-house" />
                   ))}
                 </span>
               </button>
@@ -671,7 +669,7 @@ export function Board({
         if (robot) later(() => robotLot(tile), ROBOT_WAIT + 1200);
       } else if (house.owner === me) {
         showEvent({ kind: "home", tile });
-        say(`${intro}${lines.homeAgain(tile)}`);
+        say(`${intro}${lines.homeAgain(tile, house.level < 3)}`);
         if (robot) later(() => robotHome(tile), ROBOT_WAIT + 800);
       } else {
         const owner = g.players[house.owner];
@@ -785,7 +783,7 @@ export function Board({
     say(lines.paid(pay.amount));
 
     if (pay.reason === "buy") {
-      g = { ...g, owned: { ...g.owned, [pay.tile.id]: { owner: me, level: 1, roof: player.color, decor: [] } } };
+      g = { ...g, owned: { ...g.owned, [pay.tile.id]: { owner: me, level: 1, roof: player.color } } };
       commit(g);
       onCelebrate(null, "새 집!");
       later(() => say(lines.newHouse(pay.tile)), 900);
@@ -852,11 +850,6 @@ export function Board({
     sfx.tap();
     say(lines.payAsk(cost));
     showEvent({ kind: "pay", reason: "upgrade", tile, amount: cost });
-  }
-
-  function updateHouse(tile, change) {
-    const g = gameRef.current;
-    commit({ ...g, owned: { ...g.owned, [tile.id]: change(g.owned[tile.id]) } });
   }
 
   function robotLot(tile) {
@@ -993,7 +986,7 @@ export function Board({
                     }}
                   >
                     {owned ? (
-                      <HouseArt level={owned.level} roof={owned.roof} decor={owned.decor} className="tile-house" />
+                      <HouseArt level={owned.level} roof={owned.roof} className="tile-house" />
                     ) : (
                       tile.image
                         ? <img className="tile-image" src={tile.image} alt="" aria-hidden="true" />
@@ -1144,67 +1137,34 @@ export function Board({
             {event.kind === "home" && house && (
               <div className="house-editor">
                 <div className="house-stage" style={{ "--group": groupColors[event.tile.group] }}>
-                  <HouseArt level={house.level} roof={house.roof} decor={house.decor} />
+                  <HouseArt level={house.level} roof={house.roof} />
                   <span className="house-label">{event.tile.name} · {houseNames[house.level - 1]}</span>
                   <span className="rent-chip">통행료 {tollOf(event.tile, house)}원</span>
                 </div>
-                <div className="decor-panel">
-                  {event.justBuilt && <p className="decor-title big">{possessive(current.name)} 집이 생겼어요! 🎉</p>}
-                  {event.upgraded && <p className="decor-title big">집이 커졌어요! 통행료도 커져요</p>}
+                <div className="home-panel">
+                  <p className="home-message">
+                    {event.justBuilt
+                      ? `${possessive(current.name)} 집이 생겼어요! 🎉`
+                      : event.upgraded
+                        ? "집이 커졌어요! 통행료도 커져요"
+                        : house.level < 3
+                          ? `내 집에 왔어요! ${withRo(houseNames[house.level])} 키울까요?`
+                          : "내 집에 왔어요! 가장 큰 성이에요"}
+                  </p>
                   {!eventIsRobot && (
-                    <>
-                      <p className="decor-title">지붕 색</p>
-                      <div className="roof-swatches">
-                        {[...new Set([current.color, ...roofColors])].map((color) => (
-                          <button
-                            key={color}
-                            className={`roof-swatch ${house.roof === color ? "is-active" : ""}`}
-                            style={{ background: color }}
-                            onClick={() => {
-                              sfx.tap();
-                              updateHouse(event.tile, (h) => ({ ...h, roof: color }));
-                            }}
-                            aria-label="지붕 색 바꾸기"
-                          >
-                            {house.roof === color && <CheckIcon />}
-                          </button>
-                        ))}
-                      </div>
-                      <p className="decor-title">꾸미기 (공짜!)</p>
-                      <div className="decor-grid">
-                        {decorItems.map((item) => {
-                          const placed = house.decor.includes(item.id);
-                          return (
-                            <button
-                              key={item.id}
-                              className={`decor-item ${placed ? "is-placed" : ""}`}
-                              onClick={() => {
-                                sfx.pop();
-                                updateHouse(event.tile, (h) => ({
-                                  ...h,
-                                  decor: placed ? h.decor.filter((id) => id !== item.id) : [...h.decor, item.id]
-                                }));
-                                if (!placed) say(lines.decorPlaced(item.name));
-                              }}
-                            >
-                              <img className="decor-image" src={item.image} alt="" aria-hidden="true" />
-                              <span>{item.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="sheet-buttons">
-                        {house.level < 3 && !event.justBuilt && !event.upgraded && (
-                          <button
-                            className={`chunky-button upgrade-button ${current.money < upgradeCost(event.tile) ? "is-short" : ""}`}
-                            onClick={() => upgradeHouse(event.tile)}
-                          >
-                            ⬆ {withRo(houseNames[house.level])} 키우기 · {upgradeCost(event.tile)}원
-                          </button>
-                        )}
-                        <button className="chunky-button later-button" onClick={finishTurn}>다 했어요</button>
-                      </div>
-                    </>
+                    <div className="sheet-buttons">
+                      {house.level < 3 && !event.justBuilt && !event.upgraded && (
+                        <button
+                          className={`chunky-button upgrade-button ${current.money < upgradeCost(event.tile) ? "is-short" : ""}`}
+                          onClick={() => upgradeHouse(event.tile)}
+                        >
+                          ⬆ {withRo(houseNames[house.level])} 키우기 · {upgradeCost(event.tile)}원
+                        </button>
+                      )}
+                      <button className="chunky-button later-button" onClick={finishTurn}>
+                        {event.justBuilt || event.upgraded ? "좋아요!" : "지나가기"}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

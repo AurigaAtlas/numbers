@@ -12,7 +12,7 @@ const load = (path) => server.ssrLoadModule(path);
 const { say, splitSpeech, praise } = await load("/src/speech.js");
 const { CONSONANTS, VOWELS, words, compose, hangulLevels } = await load("/src/hangul.js");
 const { levels, praise: gamePraise } = await load("/src/data.js");
-const { tiles, decorItems, houseNames, personNames, robotNames, MAX_MONEY, PASS_START_REWARD, PIGGY_FEE, QUIZ_REWARD, SCHOOL_REWARD } = await load("/src/board.js");
+const { tiles, houseNames, personNames, robotNames, MAX_MONEY, PASS_START_REWARD, PIGGY_FEE, QUIZ_REWARD, SCHOOL_REWARD } = await load("/src/board.js");
 const { initialOf } = await load("/src/hangul.js");
 
 const pieces = new Set();
@@ -100,7 +100,7 @@ for (const tile of lots) {
   add(say.lot(tile, initialOf(tile.word)));
   add(say.lotPrice(tile.price));
   add(say.newHouse(tile));
-  add(say.homeAgain(tile));
+  add(say.homeAgain(tile, true));
   add(say.soldHouse(tile));
 }
 // Tolls go up to 15원 (a 5원 castle); pots and treasure can reach the money limit.
@@ -114,7 +114,6 @@ for (const n of [1, QUIZ_REWARD, SCHOOL_REWARD]) add(say.quizReward(n));
 add(say.passStart(PASS_START_REWARD));
 add(say.piggy(PIGGY_FEE));
 [say.doubles, say.island, say.helpRobot, say.walletFull, say.gameOver, say.tie].forEach(add);
-decorItems.forEach((item) => add(say.decorPlaced(item.name)));
 houseNames.slice(1).forEach((name) => add(say.upgraded(name)));
 
 await server.close();
