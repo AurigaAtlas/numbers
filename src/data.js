@@ -340,6 +340,16 @@ export const hangulGameCards = [
     reward: 10
   },
   {
+    id: "h-blend",
+    track: "hangul",
+    title: "소리 합치기",
+    subtitle: "소리를 합쳐서 글자를 읽어요",
+    intro: "드, 오, 도! 소리를 합쳐 보자!",
+    image: "./assets/game-h-blend.webp",
+    color: "pink",
+    reward: 10
+  },
+  {
     id: "h-trace",
     track: "hangul",
     title: "따라 쓰기",

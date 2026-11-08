@@ -402,3 +402,43 @@ export function appIcon() {
     ${sparkle(400, 104, 16)}
     ${sparkle(414, 300, 12, "#ffffff")}`);
 }
+
+// 소리 합치기 card: a speaker sends out ㄷ and ㅗ, which join into 도.
+export function gameBlend() {
+  const glossy = (id, top, bottom) => `
+    <linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${top}"/>
+      <stop offset="1" stop-color="${bottom}"/>
+    </linearGradient>`;
+  const stroke = (d, width) =>
+    `<path d="${d}" fill="none" stroke="#ffffff" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return svg(256, 256, `
+    <defs>
+      ${glossy("sky", "#7cc8ff", "#2f86f0")}
+      ${glossy("sun", "#ffe17a", "#f2a900")}
+      ${glossy("pink", "#ff9cc0", "#e4457f")}
+      ${glossy("spk", "#b7a6ff", "#6d4fe8")}
+    </defs>
+    ${shadow(128, 236, 104, 12, 0.14)}
+    <rect x="16" y="150" width="34" height="50" rx="10" fill="url(#spk)"/>
+    <path d="M46 152 L86 124 Q92 120 92 128 L92 222 Q92 230 86 226 L46 198 Z" fill="url(#spk)"/>
+    <ellipse cx="30" cy="160" rx="7" ry="4" fill="#ffffff" opacity="0.45"/>
+    <path d="M100 152 Q110 175 100 198" fill="none" stroke="#9b7bff" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+    <path d="M108 140 Q124 175 108 210" fill="none" stroke="#9b7bff" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
+
+    <circle cx="62" cy="64" r="42" fill="url(#sky)"/>
+    <ellipse cx="50" cy="40" rx="18" ry="8" fill="#ffffff" opacity="0.4"/>
+    ${stroke("M82 46 H44 V82 H82", 11)}
+
+    <text x="112" y="72" font-size="34" font-family="sans-serif" font-weight="700" fill="#ff8fb4">+</text>
+
+    <circle cx="182" cy="58" r="40" fill="url(#sun)"/>
+    <ellipse cx="170" cy="36" rx="16" ry="7" fill="#ffffff" opacity="0.45"/>
+    ${stroke("M182 38 V62 M158 66 H206", 11)}
+
+    <rect x="126" y="108" width="114" height="114" rx="32" fill="url(#pink)"/>
+    <ellipse cx="160" cy="124" rx="26" ry="8" fill="#ffffff" opacity="0.38"/>
+    ${stroke("M212 128 H154 V160 H212 M183 164 V186 M146 194 H220", 13)}
+    ${sparkle(236, 104, 10)}
+    ${sparkle(118, 104, 7, "#ffffff")}`);
+}

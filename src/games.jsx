@@ -1,6 +1,6 @@
 import { BackIcon, CheckIcon, CoinIcon, SpeakerIcon, StarShape } from "./icons";
 import { VoiceStage, tileState } from "./gameParts";
-import { HangulBuild, HangulListen, HangulPicture, HangulTrace } from "./hangulGames";
+import { HangulBlend, HangulBuild, HangulListen, HangulPicture, HangulTrace } from "./hangulGames";
 import { toneClass } from "./rounds";
 
 export function GameScreen({
@@ -16,7 +16,8 @@ export function GameScreen({
   onOrder,
   onMemory,
   onBalloon,
-  onTraced
+  onTraced,
+  onSay
 }) {
   return (
     <div className={`play-panel play-${game.color}`}>
@@ -56,6 +57,7 @@ export function GameScreen({
         {game.id === "h-listen" && <HangulListen round={round} speaking={speaking} onSpeak={onSpeak} onAnswer={onAnswer} />}
         {game.id === "h-picture" && <HangulPicture round={round} onAnswer={onAnswer} />}
         {game.id === "h-build" && <HangulBuild round={round} onAnswer={onAnswer} />}
+        {game.id === "h-blend" && <HangulBlend round={round} onAnswer={onAnswer} onSay={onSay} />}
         {game.id === "h-trace" && <HangulTrace round={round} onTraced={onTraced} />}
       </div>
     </div>

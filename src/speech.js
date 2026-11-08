@@ -1,6 +1,6 @@
 // Every sentence the app speaks is built here, so the voice-pack catalog
 // (scripts/voice/build-catalog.mjs) can enumerate them all and pre-record them.
-import { CONSONANTS, compose, exampleWord, hangulPrompt, letterName, spokenForm, words } from "./hangul";
+import { CONSONANTS, compose, exampleWord, hangulPrompt, letterName, letterSound, spokenForm, words } from "./hangul";
 import { countingWord, josa, nativeCount, sinoWord } from "./rounds";
 
 export const praise = ["잘했어!", "멋져!", "좋았어!", "정말 정확해!", "최고야!"];
@@ -65,6 +65,11 @@ export const say = {
   missingHint: (step) => `${countingWord(Math.abs(step))}씩 ${step > 0 ? "커지고" : "작아지고"} 있어!`,
   slowWord: (word) => word.split("").join(", "),
   buildHint: (consonant, vowel) => `${spokenForm(consonant)}, ${spokenForm(vowel)}`,
+  // 소리 합치기: "드, 오, 도!" or, with a 받침, "가, 은, 간!".
+  blend: (parts) => (parts.final
+    ? `${parts.base}, ${letterSound(parts.final, true)}, ${parts.syllable}!`
+    : `${letterSound(parts.consonant)}, ${letterSound(parts.vowel)}, ${parts.syllable}!`),
+  notThis: (made, target) => `${josa(made, "은", "는")} 아니에요. ${josa(target, "을", "를")} 만들어 봐요.`,
   orderHint: (next) => `${josa(sinoWord(next), "을", "를")} 찾아봐`,
 
   // 도감.

@@ -13,7 +13,7 @@ const { say, splitSpeech, praise } = await load("/src/speech.js");
 const { CONSONANTS, VOWELS, words, compose, hangulLevels } = await load("/src/hangul.js");
 const { levels, praise: gamePraise } = await load("/src/data.js");
 const { tiles, houseNames, personNames, robotNames, MAX_MONEY, PASS_START_REWARD, PIGGY_FEE, QUIZ_REWARD, SCHOOL_REWARD } = await load("/src/board.js");
-const { initialOf } = await load("/src/hangul.js");
+const { initialOf, blendParts, letterSound, BLEND_FINALS } = await load("/src/hangul.js");
 
 const pieces = new Set();
 const add = (text) => {
@@ -77,6 +77,31 @@ for (const entry of words) {
   add(say.prompt({ gameId: "h-trace", target: first }));
   for (const mode of ["initial", "syllable", "word"]) add(say.prompt({ gameId: "h-picture", mode, entry }));
 }
+
+// 소리 합치기: every syllable a round can aim for or end up making.
+const blendVowels = "ㅏㅓㅗㅜㅣ".split("");
+const blendRounds = [];
+for (const consonant of CONSONANTS) {
+  for (const vowel of blendVowels) {
+    blendRounds.push({ gameId: "h-blend", mode: "consonant", consonant, vowel, final: null, answer: consonant });
+    blendRounds.push({ gameId: "h-blend", mode: "vowel", consonant, vowel, final: null, answer: vowel });
+  }
+  for (const final of BLEND_FINALS) {
+    blendRounds.push({ gameId: "h-blend", mode: "final", consonant, vowel: "ㅏ", final, answer: final });
+  }
+}
+for (const round of blendRounds) {
+  const parts = blendParts(round);
+  const full = { ...round, target: parts.syllable };
+  add(say.prompt(full));
+  add(say.blend(parts));
+  add(say.notThis(parts.syllable, parts.syllable));
+  add(parts.base);
+  add(parts.syllable);
+}
+CONSONANTS.forEach((c) => add(letterSound(c)));
+blendVowels.forEach((v) => add(letterSound(v)));
+BLEND_FINALS.forEach((f) => add(letterSound(f, true)));
 
 // 주사위 마을.
 const lots = tiles.filter((t) => t.type === "lot");

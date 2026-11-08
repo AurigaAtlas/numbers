@@ -8,6 +8,10 @@ const BASIC_VOWELS = "ㅏㅓㅗㅜㅣ".split("");
 // Unicode tables for composing/decomposing syllables.
 const CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ".split("");
 const JUNG = "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ".split("");
+const JONG = ["", ..."ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ".split("")];
+
+// Final consonants used in 소리 합치기: the ones whose sound children hear clearly.
+export const BLEND_FINALS = "ㄱㄴㄹㅁㅂㅇ".split("");
 
 const consonantNames = {
   ㄱ: "기역", ㄴ: "니은", ㄷ: "디귿", ㄹ: "리을", ㅁ: "미음", ㅂ: "비읍", ㅅ: "시옷",
@@ -100,6 +104,26 @@ export const hangulLevels = [
 
 export function compose(consonant, vowel) {
   return String.fromCharCode(0xac00 + (CHO.indexOf(consonant) * 21 + JUNG.indexOf(vowel)) * 28);
+}
+
+export function addFinal(syllable, final) {
+  return String.fromCharCode(syllable.charCodeAt(0) + JONG.indexOf(final));
+}
+
+// How a letter sounds on its own when blending: ㄷ "드", ㅗ "오", 받침 ㄴ "은".
+export function letterSound(jamo, asFinal = false) {
+  if (asFinal) return addFinal(compose("ㅇ", "ㅡ"), jamo);
+  if (CONSONANTS.includes(jamo)) return compose(jamo, "ㅡ");
+  return compose("ㅇ", jamo);
+}
+
+// The syllable a 소리 합치기 round makes with `piece` in the empty slot.
+export function blendParts(round, piece = round.answer) {
+  const consonant = round.mode === "consonant" ? piece : round.consonant;
+  const vowel = round.mode === "vowel" ? piece : round.vowel;
+  const final = round.mode === "final" ? piece : round.final;
+  const base = compose(consonant, vowel);
+  return { consonant, vowel, final, base, syllable: final ? addFinal(base, final) : base };
 }
 
 export function initialOf(text) {
@@ -226,6 +250,20 @@ export function makeHangulRound(gameId, level, mastery = {}) {
     };
   }
 
+  // 소리 합치기: hear and read a syllable, then find the missing consonant, vowel or 받침.
+  if (gameId === "h-blend") {
+    const kinds = level.id <= 2 ? ["consonant"] : level.id <= 4 ? ["consonant", "vowel"] : ["consonant", "vowel", "final"];
+    const mode = pick(kinds);
+    const vowels = level.id <= 2 ? ["ㅏ"] : BASIC_VOWELS;
+    const consonant = mode === "consonant" ? weighted(level.consonants) : pick(level.consonants);
+    const vowel = mode === "vowel" ? weighted(vowels) : mode === "final" ? "ㅏ" : pick(vowels);
+    const final = mode === "final" ? pick(BLEND_FINALS) : null;
+    const round = { ...base, mode, consonant, vowel, final };
+    const answer = { consonant, vowel, final }[mode];
+    const pool = { consonant: level.consonants, vowel: vowels, final: BLEND_FINALS }[mode];
+    return { ...round, answer, target: blendParts(round, answer).syllable, options: withDistractors(answer, pool, level.options) };
+  }
+
   if (gameId === "h-trace") {
     let target;
     if (level.trace === "consonant") target = weighted(level.consonants);
@@ -249,6 +287,10 @@ export function hangulPrompt(round) {
       return "이건 뭘까요?";
     case "h-build":
       return `${spokenForm(round.consonant)}하고 ${josa(spokenForm(round.vowel), "을", "를")} 합치면 어떤 글자가 될까요?`;
+    case "h-blend": {
+      const piece = { consonant: "자음", vowel: "모음", final: "받침" }[round.mode];
+      return `${round.target}! 어떤 ${piece}을 넣으면 ${josa(round.target, "이", "가")} 될까요?`;
+    }
     case "h-trace": {
       const name = letterName(round.target);
       return name ? `${name}. 손가락으로 따라 써볼까요?` : `${round.target}. 손가락으로 따라 써볼까요?`;

@@ -23,7 +23,7 @@ import {
   TrophyIcon
 } from "./icons";
 import { bump, centerOf, flyCoins, prefersReducedMotion, viewportCenter } from "./motion";
-import { hangulLevels, makeHangulRound } from "./hangul";
+import { blendParts, hangulLevels, makeHangulRound } from "./hangul";
 import { MISSION_REWARD, applyMissionEvent, dayKey, ensureDaily, itemKey, logPlay, missionsDone, recordResult } from "./learning";
 import { MissionPanel } from "./Missions";
 import { LevelUpOverlay, SettingsSheet } from "./overlays";
@@ -563,9 +563,11 @@ export default function App() {
     }
     if (settingsRef.current.praiseVoice) {
       const answer = answerFeedback(finishedRound);
-      const line = correct
+      // 소리 합치기 says the finished blend first: "드, 오, 도! 잘했어!"
+      const lead = finishedRound.gameId === "h-blend" ? `${lines.blend(blendParts(finishedRound))} ` : "";
+      const line = lead + (correct
         ? combo ? lines.combo(streak) : secondTry ? lines.secondTryRight : word
-        : answer ? lines.answerIs(answer.value) : lines.tryAgain;
+        : answer ? lines.answerIs(answer.value) : lines.tryAgain);
       schedule(() => say(line), correct ? 250 : 350);
     }
     setMood({ id: Date.now(), type: correct ? "happy" : "oops" });
@@ -656,6 +658,13 @@ export default function App() {
         setMessage("두 친구를 천천히 합쳐봐!");
         say(lines.buildHint(target.consonant, target.vowel), { rate: "slow" });
         break;
+      case "h-blend": {
+        // Let the child hear what the wrong piece makes, then what to aim for.
+        const made = blendParts(target, target.lastWrong);
+        setMessage(`${josa(made.syllable, "이", "가")} 됐어! ${josa(target.target, "을", "를")} 만들어 볼까?`);
+        say(`${lines.blend(made)} ${lines.notThis(made.syllable, target.target)}`, { rate: "slow" });
+        break;
+      }
       default:
         setMessage("한 번 더 해보자!");
     }
@@ -1074,6 +1083,7 @@ export default function App() {
               onMemory={chooseMemory}
               onBalloon={popBalloon}
               onTraced={finishTrace}
+              onSay={(text) => say(text)}
             />
           )}
 

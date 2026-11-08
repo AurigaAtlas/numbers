@@ -14,6 +14,8 @@ export function itemKey(round) {
       return `ko:${round.answer}`;
     case "h-build":
       return `ko:${round.consonant}`;
+    case "h-blend":
+      return `ko:${round.answer}`;
     case "h-trace":
       return `ko:${round.target}`;
     default:
@@ -65,7 +67,8 @@ const missionPool = {
     { type: "hangulCorrect", target: 5, text: "한글 놀이 5번 맞히기", icon: "가" },
     { type: "trace", target: 2, text: "따라 쓰기 2번 하기", icon: "✏️" },
     { type: "build", target: 3, text: "글자 만들기 3번 맞히기", icon: "🧩" },
-    { type: "picture", target: 3, text: "그림 글자 3번 맞히기", icon: "🖼️" }
+    { type: "picture", target: 3, text: "그림 글자 3번 맞히기", icon: "🖼️" },
+    { type: "blend", target: 3, text: "소리 합치기 3번 맞히기", icon: "🔊" }
   ],
   fun: [
     { type: "streak", target: 3, text: "3번 연속 맞히기", icon: "🔥" },
@@ -122,6 +125,9 @@ export function applyMissionEvent(daily, event) {
         break;
       case "picture":
         if (correct && event.gameId === "h-picture") progress += 1;
+        break;
+      case "blend":
+        if (correct && event.gameId === "h-blend") progress += 1;
         break;
       case "streak":
         if (event.streak !== undefined) progress = Math.max(progress, event.streak);
