@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AddGame, CountGame } from "./games";
 import { tileState } from "./gameParts";
-import { HangulBuild, HangulPicture } from "./hangulGames";
+import { HangulBuild, HangulListen, HangulPicture } from "./hangulGames";
 import { HouseArt } from "./HouseArt";
-import { initialOf, letterName, makeHangulRound } from "./hangul";
+import { initialOf, letterName, makeHangulRound, makeWordRound } from "./hangul";
 import { BackIcon } from "./icons";
 import {
   BOARD_SIZE,
   FINISH_COINS,
+  LETTER_REWARD,
   LOT_COUNT,
   MAX_MONEY,
   PASS_START_REWARD,
@@ -662,36 +663,15 @@ export function Board({
     const robot = player.robot;
 
     if (tile.type === "lot") {
-      const house = g.owned[tile.id];
-      if (!house) {
-        showEvent({ kind: "lot", tile });
-        say(`${intro}${lines.lot(tile, initialOf(tile.word))} ${lines.lotPrice(tile.price)}`);
-        if (robot) later(() => robotLot(tile), ROBOT_WAIT + 1200);
-      } else if (house.owner === me) {
-        showEvent({ kind: "home", tile });
-        say(`${intro}${lines.homeAgain(tile, house.level < 3)}`);
-        if (robot) later(() => robotHome(tile), ROBOT_WAIT + 800);
-      } else {
-        const owner = g.players[house.owner];
-        const toll = tollOf(tile, house);
-        say(`${intro}${lines.toll(owner.name, tile, toll)}`);
-        const pay = { kind: "pay", reason: "toll", tile, amount: toll, to: house.owner };
-        if (money >= toll) {
-          showEvent(pay);
-          return;
-        }
-        // Not enough money: sell houses first, like the real game.
-        const sale = sellForDebt(g, me, toll);
-        commit(sale.game);
-        const left = sale.game.players[me].money;
-        const broke = left < toll;
-        const finalPay = { ...pay, amount: Math.min(toll, left), broke };
-        const info = sale.sold.length
-          ? { kind: "info", emoji: "🏚️", title: "집을 팔았어요", text: `돈이 모자라서 ${sale.sold.map((t) => t.word).join(", ")} 마을 집을 팔았어요.`, next: finalPay }
-          : null;
-        if (sale.sold.length) later(() => say(lines.soldHouse(sale.sold[0])), 2600);
-        showEvent(info ?? (finalPay.amount > 0 ? finalPay : brokeInfo(me)));
+      // People first read the village name: what does it start with? Robots skip ahead.
+      if (!robot) {
+        const round = makeWordRound({ word: tile.word, emoji: tile.emoji, image: tile.image }, hangulLevel);
+        setQuiz({ ...round, eliminated: [] });
+        showEvent({ kind: "quiz", tile, reward: LETTER_REWARD, letter: true });
+        say(`${intro}${lines.prompt(round)}`);
+        return;
       }
+      arriveLot(tile, intro);
       return;
     }
 
@@ -703,9 +683,7 @@ export function Board({
           ? makeRound("add", numbersLevel, mastery)
           : makeRound("count", numbersLevel, mastery);
       } else {
-        round = Math.random() < 0.5
-          ? makeHangulRound("h-picture", hangulLevel, mastery)
-          : makeHangulRound("h-build", hangulLevel, mastery);
+        round = makeHangulRound(["h-picture", "h-build", "h-listen"][randInt(0, 2)], hangulLevel, mastery);
       }
       setQuiz({ ...round, eliminated: [] });
       showEvent({ kind: "quiz", tile, reward: tile.type === "school" ? SCHOOL_REWARD : QUIZ_REWARD });
@@ -743,6 +721,44 @@ export function Board({
     }
 
     showInfo({ emoji: "🚩", image: tile.image, title: "출발", text: `출발점이에요! 용돈 ${PASS_START_REWARD}원을 받았어요.`, coins: PASS_START_REWARD }, intro.trim());
+  }
+
+  // What happens on a village: build, grow your own house, or pay the owner.
+  function arriveLot(tile, intro = "") {
+    const g = gameRef.current;
+    const me = g.turn;
+    const robot = g.players[me].robot;
+    const money = g.players[me].money;
+    const house = g.owned[tile.id];
+    if (!house) {
+      showEvent({ kind: "lot", tile });
+      say(`${intro}${lines.lot(tile, initialOf(tile.word))} ${lines.lotPrice(tile.price)}`);
+      if (robot) later(() => robotLot(tile), ROBOT_WAIT + 1200);
+    } else if (house.owner === me) {
+      showEvent({ kind: "home", tile });
+      say(`${intro}${lines.homeAgain(tile, house.level < 3)}`);
+      if (robot) later(() => robotHome(tile), ROBOT_WAIT + 800);
+    } else {
+      const owner = g.players[house.owner];
+      const toll = tollOf(tile, house);
+      say(`${intro}${lines.toll(owner.name, tile, toll)}`);
+      const pay = { kind: "pay", reason: "toll", tile, amount: toll, to: house.owner };
+      if (money >= toll) {
+        showEvent(pay);
+        return;
+      }
+      // Not enough money: sell houses first, like the real game.
+      const sale = sellForDebt(g, me, toll);
+      commit(sale.game);
+      const left = sale.game.players[me].money;
+      const broke = left < toll;
+      const finalPay = { ...pay, amount: Math.min(toll, left), broke };
+      const info = sale.sold.length
+        ? { kind: "info", emoji: "🏚️", title: "집을 팔았어요", text: `돈이 모자라서 ${sale.sold.map((t) => t.word).join(", ")} 마을 집을 팔았어요.`, next: finalPay }
+        : null;
+      if (sale.sold.length) later(() => say(lines.soldHouse(sale.sold[0])), 2600);
+      showEvent(info ?? (finalPay.amount > 0 ? finalPay : brokeInfo(me)));
+    }
   }
 
   function brokeInfo(index) {
@@ -914,7 +930,8 @@ export function Board({
       sfx.wrong();
       say(lines.answerIs(quiz.answer));
     }
-    later(finishTurn, correct ? 2000 : 2600);
+    if (event.letter) later(() => arriveLot(event.tile), correct ? 1800 : 2400);
+    else later(finishTurn, correct ? 2000 : 2600);
   }
 
   // ------------------------------------------------------------ render
@@ -1174,13 +1191,19 @@ export function Board({
               <div className="board-quiz">
                 <p className="quiz-title">
                   <img className="quiz-title-image" src={event.tile.image} alt="" aria-hidden="true" />
-                  {eventIsRobot ? `${josa(current.name, "을", "를")} 도와줘요!` : event.tile.name} · 맞히면 <Won n={event.reward} />
+                  {event.letter
+                    ? `${event.tile.name} · 첫 글자를 맞히면`
+                    : eventIsRobot ? `${josa(current.name, "을", "를")} 도와줘요! · 맞히면` : `${event.tile.name} · 맞히면`}
+                  {" "}<Won n={event.reward} />
                 </p>
                 <div className="round quiz-round" key={quiz.id}>
                   {quiz.gameId === "count" && <CountGame round={quiz} onCountTap={tapQuizCount} onAnswer={answerQuiz} />}
                   {quiz.gameId === "add" && <AddGame round={quiz} onAnswer={answerQuiz} />}
                   {quiz.gameId === "h-picture" && <HangulPicture round={quiz} onAnswer={answerQuiz} />}
                   {quiz.gameId === "h-build" && <HangulBuild round={quiz} onAnswer={answerQuiz} />}
+                  {quiz.gameId === "h-listen" && (
+                    <HangulListen round={quiz} speaking={false} onSpeak={() => say(lines.prompt(quiz))} onAnswer={answerQuiz} />
+                  )}
                 </div>
               </div>
             )}

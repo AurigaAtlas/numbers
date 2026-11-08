@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { ResetIcon } from "./icons";
 import { isJamo, letterName, letterTone } from "./hangul";
+
+// Answer cards are coloured by position, not by letter, and the question uses one
+// fixed highlight colour, so children have to read the letters instead of matching colours.
+const OPTION_TONES = ["n-3", "n-5", "n-7", "n-9", "n-2", "n-6"];
 import { VoiceStage, tileState } from "./gameParts";
 
 function LetterGrid({ round, onAnswer }) {
@@ -13,7 +17,7 @@ function LetterGrid({ round, onAnswer }) {
         return (
           <button
             key={value}
-            className={`number-tile letter-tile ${isJamo(value) ? "is-jamo" : ""} ${letterTone(value)} ${tileState(value, round, round.answer)}`}
+            className={`number-tile letter-tile ${isJamo(value) ? "is-jamo" : ""} ${OPTION_TONES[index % OPTION_TONES.length]} ${tileState(value, round, round.answer)}`}
             style={{ "--i": index }}
             onClick={() => onAnswer(value)}
           >
@@ -46,13 +50,15 @@ export function HangulPicture({ round, onAnswer }) {
   return (
     <>
       <div className="picture-stage">
-        <span className="picture-emoji" aria-hidden="true">{entry.emoji}</span>
+        {entry.image
+          ? <img className="picture-image" src={entry.image} alt="" aria-hidden="true" />
+          : <span className="picture-emoji" aria-hidden="true">{entry.emoji}</span>}
         {mode !== "word" && (
           <div className="picture-word" aria-label={entry.word}>
             {entry.word.split("").map((char, index) => (
               <span
                 key={index}
-                className={`picture-char ${index === 0 ? `is-first ${letterTone(char)}` : ""} ${index === 0 && mode === "syllable" && !solved ? "is-hidden" : ""}`}
+                className={`picture-char ${index === 0 ? "is-first" : ""} ${index === 0 && mode === "syllable" && !solved ? "is-hidden" : ""}`}
                 style={{ "--i": index }}
               >
                 {index === 0 && mode === "syllable" && !solved ? "?" : char}
@@ -77,7 +83,7 @@ export function HangulBuild({ round, onAnswer }) {
   return (
     <>
       <div className={`build-stage ${solved ? "is-solved" : ""}`}>
-        <span className={`build-piece piece-c ${letterTone(round.consonant)}`}>
+        <span className="build-piece piece-c">
           {round.consonant}
           <small>{letterName(round.consonant)}</small>
         </span>
@@ -87,7 +93,7 @@ export function HangulBuild({ round, onAnswer }) {
           <small>{letterName(round.vowel)}</small>
         </span>
         <span className="build-plus">=</span>
-        <span className={`build-result ${solved ? `is-filled ${letterTone(round.answer)}` : ""}`}>
+        <span className={`build-result ${solved ? "is-filled" : ""}`}>
           {solved ? round.answer : "?"}
         </span>
       </div>

@@ -121,7 +121,8 @@ export function letterName(text) {
 }
 
 // Stable colour per letter, reusing the number palette: jamo by their order,
-// syllables and words by their first character so neighbouring options differ.
+// syllables and words by their first character. Only for showing a letter on its
+// own (도감, 따라 쓰기): in a question the colour would give the answer away.
 export function letterTone(text) {
   if (CONSONANTS.includes(text)) return `n-${(CONSONANTS.indexOf(text) % 10) + 1}`;
   if (VOWELS.includes(text)) return `n-${((VOWELS.indexOf(text) + 3) % 10) + 1}`;
@@ -155,6 +156,30 @@ function wordsFor(level) {
   return words.filter((entry) => level.consonants.includes(initialOf(entry.word)));
 }
 
+// "What does this picture start with?" for one word, at the level's difficulty.
+function pictureRound(base, entry, level) {
+  if (level.picture === "initial") {
+    const answer = initialOf(entry.word);
+    return { ...base, mode: "initial", entry, answer, options: withDistractors(answer, level.consonants, level.options) };
+  }
+  if (level.picture === "syllable") {
+    const answer = entry.word[0];
+    const consonant = initialOf(answer);
+    const vowel = JUNG[Math.floor(((answer.charCodeAt(0) - 0xac00) % 588) / 28)];
+    const hasFinal = (answer.charCodeAt(0) - 0xac00) % 28 !== 0;
+    const pool = hasFinal
+      ? words.map((w) => w.word[0])
+      : similarSyllables(consonant, VOWELS.includes(vowel) ? vowel : "ㅏ", level);
+    return { ...base, mode: "syllable", entry, answer, options: withDistractors(answer, pool, level.options) };
+  }
+  return { ...base, mode: "word", entry, answer: entry.word, options: withDistractors(entry.word, words.map((w) => w.word), level.options) };
+}
+
+// The same question for a word the caller chooses, e.g. a 주사위 마을 village name.
+export function makeWordRound(entry, level) {
+  return pictureRound({ id: `${Date.now()}-${Math.random()}`, gameId: "h-picture", level: level.id, feedback: null }, entry, level);
+}
+
 export function makeHangulRound(gameId, level, mastery = {}) {
   const koKey = (text) => `ko:${text}`;
   const weighted = (pool) => pickWeighted(pool, koKey, mastery);
@@ -185,21 +210,7 @@ export function makeHangulRound(gameId, level, mastery = {}) {
     const initials = [...new Set(pool.map((w) => initialOf(w.word)))];
     const initial = level.picture === "initial" ? weighted(initials) : pick(initials);
     const entry = pick(pool.filter((w) => initialOf(w.word) === initial));
-    if (level.picture === "initial") {
-      const answer = initialOf(entry.word);
-      return { ...base, mode: "initial", entry, answer, options: withDistractors(answer, level.consonants, level.options) };
-    }
-    if (level.picture === "syllable") {
-      const answer = entry.word[0];
-      const consonant = initialOf(answer);
-      const vowel = JUNG[Math.floor(((answer.charCodeAt(0) - 0xac00) % 588) / 28)];
-      const hasFinal = (answer.charCodeAt(0) - 0xac00) % 28 !== 0;
-      const pool2 = hasFinal
-        ? words.map((w) => w.word[0])
-        : similarSyllables(consonant, VOWELS.includes(vowel) ? vowel : "ㅏ", level);
-      return { ...base, mode: "syllable", entry, answer, options: withDistractors(answer, pool2, level.options) };
-    }
-    return { ...base, mode: "word", entry, answer: entry.word, options: withDistractors(entry.word, words.map((w) => w.word), level.options) };
+    return pictureRound(base, entry, level);
   }
 
   if (gameId === "h-build") {

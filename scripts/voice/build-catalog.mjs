@@ -97,6 +97,13 @@ for (const name of names) {
   for (const tile of lots) add(say.toll(name, tile, tile.price));
 }
 for (const tile of lots) {
+  // Landing on a village asks for its first letter.
+  const entry = { word: tile.word, emoji: tile.emoji };
+  for (const mode of ["initial", "syllable", "word"]) add(say.prompt({ gameId: "h-picture", mode, entry }));
+  add(say.slowWord(tile.word));
+  add(say.answerIs(tile.word));
+  add(say.answerIs(tile.word[0]));
+  add(say.answerIs(initialOf(tile.word)));
   add(say.lot(tile, initialOf(tile.word)));
   add(say.lotPrice(tile.price));
   add(say.newHouse(tile));
