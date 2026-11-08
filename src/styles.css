@@ -2598,16 +2598,25 @@ h2 {
   animation: pop-in 460ms var(--spring) calc(var(--i) * 90ms + 250ms) backwards;
 }
 
+.picture-image {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  animation: emoji-in 600ms var(--spring) backwards;
+}
+
+/* The question side is dark and the answer cards are bright, so no card can be found
+   by matching a colour from the question: children have to read the letter. */
 .picture-char.is-first {
   color: #ffffff;
-  background: var(--num);
-  box-shadow: 0 5px 0 var(--num-deep);
+  background: var(--ink);
+  box-shadow: 0 5px 0 #17142e;
 }
 
 .picture-char.is-hidden {
-  color: var(--num);
+  color: var(--ink);
   background: #ffffff;
-  border: 4px dashed var(--num);
+  border: 4px dashed var(--ink-soft);
   box-shadow: none;
   animation:
     pop-in 460ms var(--spring) 250ms backwards,
@@ -2652,15 +2661,15 @@ h2 {
 
 .piece-c {
   color: #ffffff;
-  background: var(--num);
-  box-shadow: 0 7px 0 var(--num-deep);
+  background: var(--ink);
+  box-shadow: 0 7px 0 #17142e;
   animation: slide-from-left 620ms var(--spring) 100ms backwards;
 }
 
 .piece-v {
   color: #ffffff;
-  background: linear-gradient(180deg, #ffd84a, #f2b100);
-  box-shadow: 0 7px 0 #c48d00;
+  background: #5b5680;
+  box-shadow: 0 7px 0 #3c3860;
   animation: slide-from-right 620ms var(--spring) 250ms backwards;
 }
 
@@ -2679,9 +2688,9 @@ h2 {
 
 .build-result.is-filled {
   color: #ffffff;
-  background: var(--num);
+  background: var(--ink);
   border: 0;
-  box-shadow: 0 7px 0 var(--num-deep);
+  box-shadow: 0 7px 0 #17142e;
   animation: tile-correct 700ms var(--spring) both;
 }
 

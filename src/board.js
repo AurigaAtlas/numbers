@@ -8,6 +8,7 @@ export const PASS_START_REWARD = 3;
 export const PIGGY_FEE = 2;
 export const QUIZ_REWARD = 2;
 export const SCHOOL_REWARD = 3;
+export const LETTER_REWARD = 1; // reading a village's first letter
 export const FINISH_COINS = 15; // shop coins for finishing a game
 
 const boardImage = (name) => `./assets/board/${name}.webp`;
