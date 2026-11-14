@@ -442,3 +442,62 @@ export function gameBlend() {
     ${sparkle(236, 104, 10)}
     ${sparkle(118, 104, 7, "#ffffff")}`);
 }
+
+const jamoStroke = (d, width, color = "#ffffff") =>
+  `<path d="${d}" fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+const gloss = (id, top, bottom) => `
+  <linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="${top}"/>
+    <stop offset="1" stop-color="${bottom}"/>
+  </linearGradient>`;
+
+// 글자 풍선 card: three balloons carrying ㄱ, ㄴ and ㄷ.
+export function gameLetterBalloon() {
+  const balloon = (cx, cy, r, fill, knot, glyph) => `
+    <path d="M${cx} ${cy + r + 8} q-10 26 6 52" fill="none" stroke="#b9a8d8" stroke-width="3" stroke-linecap="round"/>
+    <path d="M${cx - 8} ${cy + r + 8} L${cx + 8} ${cy + r + 8} L${cx} ${cy + r - 4}Z" fill="${knot}"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r * 1.14}" fill="url(#${fill})"/>
+    <ellipse cx="${cx - r * 0.38}" cy="${cy - r * 0.5}" rx="${r * 0.2}" ry="${r * 0.32}" fill="#ffffff" opacity="0.5" transform="rotate(-24 ${cx - r * 0.38} ${cy - r * 0.5})"/>
+    ${glyph}`;
+  return svg(256, 256, `
+    <defs>
+      ${gloss("b1", "#ff9cb6", "#ea4f7a")}
+      ${gloss("b2", "#8fd0ff", "#3487ee")}
+      ${gloss("b3", "#ffe07a", "#f0a700")}
+    </defs>
+    ${shadow(128, 240, 92, 10, 0.12)}
+    ${balloon(70, 96, 46, "b2", "#3487ee", jamoStroke("M50 80 H90 M50 80 V112 H90", 10))}
+    ${balloon(190, 104, 44, "b3", "#f0a700", jamoStroke("M210 88 H172 V122 H210", 10))}
+    ${balloon(130, 78, 52, "b1", "#ea4f7a", jamoStroke("M108 58 H152 V100", 12))}
+    ${sparkle(34, 40, 9)}
+    ${sparkle(226, 36, 11)}
+    ${sparkle(222, 180, 7, "#ffffff")}`);
+}
+
+// 글자 짝 맞추기 card: a letter card and a picture card that belong together (ㄴ, 나무).
+export function gameLetterMemory() {
+  return svg(256, 256, `
+    <defs>
+      ${gloss("c1", "#ffffff", "#e6f7f4")}
+      ${gloss("c2", "#ffffff", "#fff1d6")}
+      ${gloss("back", "#55d3bf", "#149c88")}
+      ${gloss("leaf", "#7fdc8f", "#2fa457")}
+    </defs>
+    ${shadow(128, 238, 100, 11, 0.13)}
+    <g transform="rotate(-10 84 136)">
+      <rect x="26" y="52" width="112" height="150" rx="22" fill="url(#back)"/>
+      <rect x="20" y="44" width="112" height="150" rx="22" fill="url(#c1)" stroke="#19a892" stroke-width="6"/>
+      ${jamoStroke("M52 84 V150 H104", 15, "#149c88")}
+    </g>
+    <g transform="rotate(9 176 130)">
+      <rect x="122" y="60" width="112" height="150" rx="22" fill="url(#c2)" stroke="#f0a700" stroke-width="6"/>
+      <rect x="170" y="140" width="16" height="44" rx="6" fill="#a8703f"/>
+      <circle cx="178" cy="118" r="34" fill="url(#leaf)"/>
+      <circle cx="158" cy="134" r="20" fill="url(#leaf)"/>
+      <circle cx="200" cy="134" r="20" fill="url(#leaf)"/>
+      <circle cx="166" cy="104" r="8" fill="#ffffff" opacity="0.4"/>
+    </g>
+    <path d="M128 30 C118 16 98 24 104 40 C108 52 128 62 128 62 C128 62 148 52 152 40 C158 24 138 16 128 30Z" fill="#ff7fa6"/>
+    ${sparkle(30, 34, 8)}
+    ${sparkle(232, 44, 9)}`);
+}

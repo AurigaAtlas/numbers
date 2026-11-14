@@ -103,6 +103,33 @@ CONSONANTS.forEach((c) => add(letterSound(c)));
 blendVowels.forEach((v) => add(letterSound(v)));
 BLEND_FINALS.forEach((f) => add(letterSound(f, true)));
 
+// 한글 길, 글자 풍선, 글자 짝 맞추기.
+const { PATH_BLEND_CONSONANTS, rowSyllables } = await load("/src/path.js");
+for (const letter of [...CONSONANTS, ...VOWELS]) {
+  add(say.pathMeet(letter));
+  add(say.prompt({ gameId: "h-balloon", target: letter }));
+}
+for (const vowel of blendVowels) add(say.pathChart(rowSyllables(vowel)));
+[say.pathWords, say.pathDone, say.pathAllDone].forEach(add);
+for (const consonant of CONSONANTS) {
+  for (const vowel of VOWELS) add(compose(consonant, vowel)); // tapped syllables, popped balloons
+  for (const vowel of blendVowels) add(say.prompt({ gameId: "h-balloon", target: compose(consonant, vowel) }));
+}
+// A new vowel is tried out with a few easy consonants (ㄱ + ? = 갸).
+for (const consonant of PATH_BLEND_CONSONANTS) {
+  for (const vowel of VOWELS) {
+    const round = { gameId: "h-blend", mode: "vowel", consonant, vowel, final: null, answer: vowel };
+    const parts = blendParts(round);
+    add(say.prompt({ ...round, target: parts.syllable }));
+    add(say.blend(parts));
+    add(say.notThis(parts.syllable, parts.syllable));
+  }
+}
+for (const entry of words) {
+  add(entry.word); // memory cards and word cards read the word alone
+  add(entry.word[0]);
+}
+
 // 주사위 마을.
 const lots = tiles.filter((t) => t.type === "lot");
 const names = [...personNames, ...robotNames];

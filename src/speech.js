@@ -111,7 +111,20 @@ export const say = {
   tie: "똑같이 모았어요! 모두 우승!",
   // Written out ("이층") so recorded voices do not have to guess how to read "2층".
   upgraded: (houseName) => `우와! ${josa(houseName.replace(/2층/g, "이층"), "이", "가")} 되었어요!`,
-  quizRight: "정답이에요!"
+  quizRight: "정답이에요!",
+
+  // 한글 길.
+  pathMeet(letter) {
+    const name = letterName(letter);
+    if (!CONSONANTS.includes(letter)) return say.dex(letter);
+    const example = exampleWord(letter);
+    const sound = letter === "ㅇ" ? "앞에 오면 소리가 없어요." : `${letterSound(letter)} 소리가 나요.`;
+    return `${name}. ${sound}${example ? ` ${example.word}의 ${name}.` : ""}`;
+  },
+  pathChart: (syllables) => `${syllables.slice(0, 7).join(", ")}.`,
+  pathWords: "낱말을 눌러서 들어봐요.",
+  pathDone: "참 잘했어요! 별을 받았어요!",
+  pathAllDone: "우와! 한글 길을 끝까지 걸었어요!"
 };
 
 // Sentences are recorded and played back piece by piece, split after . ! ? and ,

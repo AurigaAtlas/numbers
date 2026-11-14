@@ -1,5 +1,5 @@
 import { pickWeighted } from "./learning";
-import { josa, shuffle } from "./rounds";
+import { josa, makeBalloons, shuffle } from "./rounds";
 
 export const CONSONANTS = "ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎ".split("");
 export const VOWELS = "ㅏㅑㅓㅕㅗㅛㅜㅠㅡㅣ".split("");
@@ -31,6 +31,7 @@ export const words = [
   ["바나나", "🍌"], ["비행기", "✈️"], ["버스", "🚌"], ["별", "⭐"], ["부엉이", "🦉"],
   ["사과", "🍎"], ["사자", "🦁"], ["소", "🐮"], ["수박", "🍉"], ["시계", "⏰"],
   ["오리", "🦆"], ["우유", "🥛"], ["아기", "👶"], ["여우", "🦊"], ["양", "🐑"],
+  ["야구", "⚾"], ["어린이", "🧒"], ["요요", "🪀"], ["유령", "👻"], ["이불", "🛏️"],
   ["자동차", "🚗"], ["지구", "🌍"], ["자전거", "🚲"], ["주스", "🧃"], ["장갑", "🧤"],
   ["치즈", "🧀"], ["축구공", "⚽"], ["칫솔", "🪥"], ["촛불", "🕯️"], ["치마", "👗"],
   ["케이크", "🍰"], ["코끼리", "🐘"], ["키위", "🥝"], ["쿠키", "🍪"], ["코알라", "🐨"],
@@ -50,7 +51,9 @@ export const hangulLevels = [
     listen: "consonant",
     picture: "initial",
     buildVowels: ["ㅏ"],
-    trace: "consonant"
+    trace: "consonant",
+    balloon: { goal: 1, duration: 10 },
+    memoryPairs: 3
   },
   {
     id: 2,
@@ -62,7 +65,9 @@ export const hangulLevels = [
     listen: "consonant",
     picture: "initial",
     buildVowels: ["ㅏ"],
-    trace: "consonant"
+    trace: "consonant",
+    balloon: { goal: 2, duration: 9 },
+    memoryPairs: 4
   },
   {
     id: 3,
@@ -74,7 +79,9 @@ export const hangulLevels = [
     listen: "vowel",
     picture: "initial",
     buildVowels: BASIC_VOWELS,
-    trace: "vowel"
+    trace: "vowel",
+    balloon: { goal: 3, duration: 8 },
+    memoryPairs: 4
   },
   {
     id: 4,
@@ -86,7 +93,9 @@ export const hangulLevels = [
     listen: "syllable",
     picture: "syllable",
     buildVowels: VOWELS,
-    trace: "syllable"
+    trace: "syllable",
+    balloon: { goal: 3, duration: 7 },
+    memoryPairs: 5
   },
   {
     id: 5,
@@ -98,7 +107,9 @@ export const hangulLevels = [
     listen: "word",
     picture: "word",
     buildVowels: VOWELS,
-    trace: "word"
+    trace: "word",
+    balloon: { goal: 3, duration: 6.5 },
+    memoryPairs: 6
   }
 ];
 
@@ -110,9 +121,11 @@ export function addFinal(syllable, final) {
   return String.fromCharCode(syllable.charCodeAt(0) + JONG.indexOf(final));
 }
 
-// How a letter sounds on its own when blending: ㄷ "드", ㅗ "오", 받침 ㄴ "은".
+// How a letter sounds on its own when blending: ㄷ "드", ㅗ "오", 받침 ㄴ "은", 받침 ㅇ "응".
 export function letterSound(jamo, asFinal = false) {
   if (asFinal) return addFinal(compose("ㅇ", "ㅡ"), jamo);
+  // ㅇ has no sound of its own at the start of a syllable, so it goes by its name.
+  if (jamo === "ㅇ") return "이응";
   if (CONSONANTS.includes(jamo)) return compose(jamo, "ㅡ");
   return compose("ㅇ", jamo);
 }
@@ -162,7 +175,7 @@ function pick(values) {
   return values[Math.floor(Math.random() * values.length)];
 }
 
-function withDistractors(answer, pool, count) {
+export function withDistractors(answer, pool, count) {
   const others = shuffle([...new Set(pool)].filter((value) => value !== answer)).slice(0, count - 1);
   return shuffle([answer, ...others]);
 }
@@ -264,6 +277,54 @@ export function makeHangulRound(gameId, level, mastery = {}) {
     return { ...round, answer, target: blendParts(round, answer).syllable, options: withDistractors(answer, pool, level.options) };
   }
 
+  // 글자 풍선: pop every balloon that carries the letter you hear.
+  if (gameId === "h-balloon") {
+    let target;
+    let others;
+    if (level.listen === "consonant") {
+      target = weighted(level.consonants);
+      others = level.consonants.filter((c) => c !== target);
+    } else if (level.listen === "vowel") {
+      target = weighted(VOWELS);
+      others = VOWELS.filter((v) => v !== target);
+    } else {
+      const consonant = weighted(level.consonants);
+      const vowel = pick(BASIC_VOWELS);
+      target = compose(consonant, vowel);
+      others = similarSyllables(consonant, vowel, level).slice(0, 6);
+    }
+    const { goal, duration } = level.balloon;
+    return { ...base, target, goal, balloons: makeBalloons(target, others, goal, duration), popped: [], wrong: null };
+  }
+
+  // 글자 짝 맞추기: each pair is a letter and what it belongs to (a picture, a sound or a word).
+  if (gameId === "h-memory") {
+    const pairs = level.memoryPairs;
+    let items;
+    if (level.listen === "consonant") {
+      items = shuffle(level.consonants).slice(0, pairs).map((consonant) => {
+        const entry = pick(words.filter((w) => initialOf(w.word) === consonant));
+        return { value: consonant, a: { text: consonant, say: spokenForm(consonant) }, b: { emoji: entry.emoji, text: entry.word, say: entry.word } };
+      });
+    } else if (level.listen === "vowel") {
+      items = shuffle(VOWELS).slice(0, pairs).map((vowel) => {
+        const sound = compose("ㅇ", vowel);
+        return { value: vowel, a: { text: vowel, say: sound }, b: { text: sound, say: sound } };
+      });
+    } else {
+      const firsts = new Set();
+      const entries = shuffle(words).filter((w) => !firsts.has(w.word[0]) && firsts.add(w.word[0])).slice(0, pairs);
+      items = entries.map((entry) => (level.listen === "syllable"
+        ? { value: entry.word, a: { text: entry.word[0], say: entry.word[0] }, b: { emoji: entry.emoji, text: entry.word, say: entry.word } }
+        : { value: entry.word, a: { text: entry.word, say: entry.word }, b: { emoji: entry.emoji, say: entry.word } }));
+    }
+    const cards = shuffle(items.flatMap(({ value, a, b }) => [
+      { id: `${value}-a`, value, matched: false, ...a },
+      { id: `${value}-b`, value, matched: false, ...b }
+    ]));
+    return { ...base, cards, flipped: [], resolving: false };
+  }
+
   if (gameId === "h-trace") {
     let target;
     if (level.trace === "consonant") target = weighted(level.consonants);
@@ -291,6 +352,8 @@ export function hangulPrompt(round) {
       const piece = { consonant: "자음", vowel: "모음", final: "받침" }[round.mode];
       return `${round.target}! 어떤 ${piece}을 넣으면 ${josa(round.target, "이", "가")} 될까요?`;
     }
+    case "h-balloon":
+      return `${spokenForm(round.target)} 풍선을 터뜨려주세요.`;
     case "h-trace": {
       const name = letterName(round.target);
       return name ? `${name}. 손가락으로 따라 써볼까요?` : `${round.target}. 손가락으로 따라 써볼까요?`;

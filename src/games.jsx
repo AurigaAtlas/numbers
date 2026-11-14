@@ -49,11 +49,11 @@ export function GameScreen({
         {game.id === "find" && <FindGame round={round} speaking={speaking} onSpeak={onSpeak} onAnswer={onAnswer} />}
         {game.id === "count" && <CountGame round={round} onCountTap={onCountTap} onAnswer={onAnswer} />}
         {game.id === "order" && <OrderGame round={round} onOrder={onOrder} />}
-        {game.id === "memory" && <MemoryGame round={round} onMemory={onMemory} />}
+        {(game.id === "memory" || game.id === "h-memory") && <MemoryGame round={round} onMemory={onMemory} />}
         {game.id === "compare" && <CompareGame round={round} onAnswer={onAnswer} />}
         {game.id === "missing" && <MissingGame round={round} onAnswer={onAnswer} />}
         {game.id === "add" && <AddGame round={round} onAnswer={onAnswer} />}
-        {game.id === "balloon" && <BalloonGame round={round} onBalloon={onBalloon} />}
+        {(game.id === "balloon" || game.id === "h-balloon") && <BalloonGame round={round} onBalloon={onBalloon} />}
         {game.id === "h-listen" && <HangulListen round={round} speaking={speaking} onSpeak={onSpeak} onAnswer={onAnswer} />}
         {game.id === "h-picture" && <HangulPicture round={round} onAnswer={onAnswer} />}
         {game.id === "h-build" && <HangulBuild round={round} onAnswer={onAnswer} />}
@@ -171,23 +171,33 @@ function OrderGame({ round, onOrder }) {
 }
 
 function MemoryGame({ round, onMemory }) {
+  // Number cards are tinted by their number; letter cards all share one tint so a
+  // pair has to be read, not colour-matched.
+  const letters = round.gameId === "h-memory";
   return (
-    <div className={`memory-grid cards-${round.cards.length}`}>
+    <div className={`memory-grid cards-${round.cards.length} ${letters ? "is-letters" : ""}`}>
       {round.cards.map((card, index) => {
         const visible = card.matched || round.flipped.includes(card.id);
         return (
           <button
             key={card.id}
-            className={`memory-card ${toneClass(card.value)} ${visible ? "visible" : ""} ${card.matched ? "matched" : ""}`}
+            className={`memory-card ${letters ? "n-7" : toneClass(card.value)} ${visible ? "visible" : ""} ${card.matched ? "matched" : ""}`}
             style={{ "--i": index }}
             onClick={() => onMemory(card.id)}
-            aria-label={visible ? `${card.value}` : "뒤집힌 카드"}
+            aria-label={visible ? `${card.say ?? card.value}` : "뒤집힌 카드"}
           >
             <span className="memory-inner">
               <span className="memory-face memory-back">
                 <StarShape />
               </span>
-              <span className="memory-face memory-front">{card.value}</span>
+              {letters ? (
+                <span className={`memory-face memory-front ${card.emoji ? "has-picture" : ""} ${(card.text ?? "").length > 1 ? "is-word" : ""}`}>
+                  {card.emoji && <i className="memory-emoji" aria-hidden="true">{card.emoji}</i>}
+                  {card.text && <b>{card.text}</b>}
+                </span>
+              ) : (
+                <span className="memory-face memory-front">{card.value}</span>
+              )}
             </span>
           </button>
         );
@@ -294,7 +304,7 @@ function BalloonGame({ round, onBalloon }) {
   return (
     <>
       <div className="balloon-target">
-        <span className={`target-number ${toneClass(round.target)}`}>{round.target}</span>
+        <span className={`target-number ${typeof round.target === "number" ? toneClass(round.target) : "is-letter"}`}>{round.target}</span>
         <span className="target-copy">
           <strong>풍선을 찾아 터뜨려요</strong>
           <span className="target-dots">

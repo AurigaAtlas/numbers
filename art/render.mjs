@@ -3,7 +3,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { appIcon, countStar, gameBlend, gameFind, shopItemArt } from "./items.mjs";
+import { appIcon, countStar, gameBlend, gameFind, gameLetterBalloon, gameLetterMemory, shopItemArt } from "./items.mjs";
 import { roomArt } from "./rooms.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -102,6 +102,12 @@ if (want("game-find")) {
 if (want("game-h-blend")) {
   writeFileSync(join(root, "art", "svg", "game-h-blend.svg"), gameBlend());
   await renderAt(gameBlend(), join(assets, "game-h-blend.webp"), 1);
+}
+
+for (const [name, draw] of [["game-h-balloon", gameLetterBalloon], ["game-h-memory", gameLetterMemory]]) {
+  if (!want(name)) continue;
+  writeFileSync(join(root, "art", "svg", `${name}.svg`), draw());
+  await renderAt(draw(), join(assets, `${name}.webp`), 1);
 }
 
 if (want("app-icon")) {

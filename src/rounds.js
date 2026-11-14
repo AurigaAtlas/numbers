@@ -85,6 +85,27 @@ function twoObjects() {
   return [first, second];
 }
 
+// Nine rising balloons: one more than `goal` carry the target, the rest other values.
+export function makeBalloons(target, others, goal, duration) {
+  const poolSize = 9;
+  const values = shuffle([
+    ...Array.from({ length: goal + 1 }, () => target),
+    ...Array.from({ length: poolSize - goal - 1 }, () => pick(others))
+  ]);
+  const lanes = shuffle(range(0, poolSize - 1));
+  return values.map((value, index) => {
+    const speed = duration * (0.85 + Math.random() * 0.3);
+    return {
+      id: `b${index}`,
+      value,
+      x: 12 + (lanes[index] / (poolSize - 1)) * 76,
+      duration: speed,
+      delay: -((index / poolSize) * speed) - Math.random() * 0.6,
+      sway: randInt(0, 2)
+    };
+  });
+}
+
 export function makeRound(gameId, level, mastery = {}) {
   const base = { id: `${Date.now()}-${Math.random()}`, gameId, level: level.id, feedback: null };
   const { max } = level;
@@ -204,24 +225,7 @@ export function makeRound(gameId, level, mastery = {}) {
   if (gameId === "balloon") {
     const target = pickWeighted(range(1, max), numKey, mastery);
     const { goal, duration } = level.balloon;
-    const poolSize = 9;
-    const others = range(1, max).filter((n) => n !== target);
-    const values = shuffle([
-      ...Array.from({ length: goal + 1 }, () => target),
-      ...Array.from({ length: poolSize - goal - 1 }, () => pick(others))
-    ]);
-    const lanes = shuffle(range(0, poolSize - 1));
-    const balloons = values.map((value, index) => {
-      const speed = duration * (0.85 + Math.random() * 0.3);
-      return {
-        id: `b${index}`,
-        value,
-        x: 12 + (lanes[index] / (poolSize - 1)) * 76,
-        duration: speed,
-        delay: -((index / poolSize) * speed) - Math.random() * 0.6,
-        sway: randInt(0, 2)
-      };
-    });
+    const balloons = makeBalloons(target, range(1, max).filter((n) => n !== target), goal, duration);
     return { ...base, target, goal, balloons, popped: [], wrong: null };
   }
 
