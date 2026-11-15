@@ -41,7 +41,7 @@ for (const lesson of pathLessons) for (let i = 0; i < 40; i++) for (const step o
   if (step.type === "words") step.entries.forEach((e) => check(e.word, "words"));
 }
 for (let streak = 3; streak <= 60; streak += 3) check(say.combo(streak), "combo");
-[...praise, say.secondTryRight, say.tryAgain, say.preview, say.breakTime, say.breakOver, say.missionDone, say.pathDone, say.pathAllDone, say.pathWords].forEach((t) => check(t, "fixed"));
+[...praise, say.secondTryRight, say.tryAgain, say.preview, say.breakTime, say.breakOver, say.missionDone, say.pathDone, say.pathAllDone, say.pathWords, say.reviewDone].forEach((t) => check(t, "fixed"));
 [...levels, ...hangulLevels].forEach((l) => check(say.levelUp(l.name), "levelUp"));
 for (let n = 1; n <= 20; n++) { check(say.dex(n), "dex"); check(sinoWord(n), "dex"); }
 console.log(rounds, "random rounds;", missing.size, "pieces without a recording");

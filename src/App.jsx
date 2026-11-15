@@ -24,7 +24,7 @@ import {
 } from "./icons";
 import { bump, centerOf, flyCoins, prefersReducedMotion, viewportCenter } from "./motion";
 import { blendParts, hangulLevels, makeHangulRound, spokenForm } from "./hangul";
-import { MISSION_REWARD, applyMissionEvent, dayKey, ensureDaily, itemKey, logPlay, missionsDone, recordResult } from "./learning";
+import { MISSION_REWARD, applyMissionEvent, dayKey, dueItems, ensureDaily, itemKey, logPlay, missionsDone, recordResult, scheduleReview } from "./learning";
 import { MissionPanel } from "./Missions";
 import { LevelUpOverlay, SettingsSheet } from "./overlays";
 import { BreakOverlay, ParentGate, ReportSheet } from "./parent";
@@ -72,7 +72,9 @@ const defaultState = {
   daily: null,
   board: null,
   history: {},
-  path: { stars: {} }
+  path: { stars: {} },
+  review: {},
+  reviewDay: null
 };
 
 const defaultSettings = {
@@ -103,6 +105,12 @@ const tracks = {
     rangeText: (level) => level.perk
   }
 };
+
+// Single letters (ㄱ, ㅏ) are the items that come back in 오늘의 복습.
+function reviewKey(round) {
+  const key = itemKey(round);
+  return key && /^ko:[ㄱ-ㅎㅏ-ㅣ]$/.test(key) ? key : null;
+}
 
 function trackOf(gameId) {
   return gameId.startsWith("h-") ? "hangul" : "numbers";
@@ -166,7 +174,8 @@ function normalizeState(rawState) {
     daily: ensureDaily(rawState?.daily, todayKey()),
     board: normalizeBoard(rawState?.board),
     history: rawState?.history ?? {},
-    path: { stars: rawState?.path?.stars ?? {} }
+    path: { stars: rawState?.path?.stars ?? {} },
+    review: rawState?.review ?? {}
   };
 }
 
@@ -402,13 +411,13 @@ export default function App() {
     setSettings((current) => ({ ...current, ...patch }));
   }
 
-  function say(text, { track = false, voiceURI, rate } = {}) {
+  function say(text, { track = false, voiceURI, rate, onEnd } = {}) {
     const current = settingsRef.current;
     speak(text, {
       voiceURI: voiceURI ?? current.voiceURI,
       rate: rate ?? current.rate,
       onStart: track ? () => setSpeaking(true) : undefined,
-      onEnd: track ? () => setSpeaking(false) : undefined
+      onEnd: track ? () => setSpeaking(false) : onEnd
     });
   }
 
@@ -603,6 +612,7 @@ export default function App() {
       progress: nextProgress,
       mastery,
       daily,
+      review: scheduleReview(latest.review, reviewKey(finishedRound), firstTry, todayKey()),
       history: logPlay(latest.history, todayKey(), { track, firstTry })
     }));
     schedule(() => coinsToWallet(viewportCenter(), correct ? 6 : 3), correct ? 420 : 500);
@@ -833,11 +843,15 @@ export default function App() {
   }
 
   // A finished 한글 길 lesson: keep the best star count and pay the reward.
+  // 오늘의 복습 is not a step on the path, so it only notes that today's review is done.
   function completeLesson(lesson, stars, reward) {
     updateProfile((current) => ({
       ...current,
       coins: current.coins + reward,
-      path: { stars: { ...current.path.stars, [lesson.id]: Math.max(current.path.stars[lesson.id] ?? 0, stars) } },
+      path: lesson.kind === "daily"
+        ? current.path
+        : { stars: { ...current.path.stars, [lesson.id]: Math.max(current.path.stars[lesson.id] ?? 0, stars) } },
+      reviewDay: lesson.kind === "daily" ? todayKey() : current.reviewDay,
       daily: applyMissionEvent(ensureDaily(current.daily, todayKey()), { pathLesson: true })
     }));
     triggerCelebration(reward, "참 잘했어요!");
@@ -868,6 +882,7 @@ export default function App() {
     updateProfile((current) => ({
       ...current,
       mastery: recordResult(current.mastery, itemKey(learnRound), firstTry),
+      review: scheduleReview(current.review, reviewKey(learnRound), firstTry, todayKey()),
       history: logPlay(current.history, todayKey(), { track: trackOf(learnRound.gameId), firstTry }),
       daily: applyMissionEvent(ensureDaily(current.daily, todayKey()), {
         gameId: learnRound.gameId,
@@ -1150,6 +1165,9 @@ export default function App() {
           {screen === "path" && (
             <Path
               stars={profile.path.stars}
+              review={profile.review}
+              today={todayKey()}
+              reviewedToday={profile.reviewDay === todayKey()}
               say={say}
               setMessage={setMessage}
               onBack={goHome}
@@ -1426,6 +1444,7 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
         const stars = profile.path.stars;
         const at = nextLessonIndex(stars);
         const next = pathLessons[at];
+        const due = dueItems(profile.review, todayKey()).length;
         return (
           <button className="path-banner enter" style={{ "--i": 2 }} onClick={onPath}>
             <span className="path-banner-stones" aria-hidden="true">
@@ -1441,6 +1460,7 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
                 {next
                   ? `ㄱ부터 차례대로 배워요 · 다음: ${next.title} (${at}/${pathLessons.length})`
                   : "끝까지 다 걸었어요! 다시 해볼 수 있어요"}
+                {due > 0 && profile.reviewDay !== todayKey() && <b className="banner-due">오늘 복습 {due}개</b>}
               </small>
             </span>
             <span className="play-dot"><PlayIcon /></span>

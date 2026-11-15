@@ -110,7 +110,7 @@ for (const letter of [...CONSONANTS, ...VOWELS]) {
   add(say.prompt({ gameId: "h-balloon", target: letter }));
 }
 for (const vowel of blendVowels) add(say.pathChart(rowSyllables(vowel)));
-[say.pathWords, say.pathDone, say.pathAllDone].forEach(add);
+[say.pathWords, say.pathDone, say.pathAllDone, say.reviewDone].forEach(add);
 for (const consonant of CONSONANTS) {
   for (const vowel of VOWELS) add(compose(consonant, vowel)); // tapped syllables, popped balloons
   for (const vowel of blendVowels) add(say.prompt({ gameId: "h-balloon", target: compose(consonant, vowel) }));

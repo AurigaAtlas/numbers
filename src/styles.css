@@ -7609,3 +7609,238 @@ button.coin-slot:not(:disabled):active {
     animation: none;
   }
 }
+
+/* --- 오늘의 복습, 듣고 따라 읽기 --- */
+.banner-due {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 10px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: var(--pink);
+  font-weight: 400;
+}
+
+.daily-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(120deg, #fff4d6, #ffe6ee);
+  box-shadow: inset 0 0 0 2px rgba(255, 201, 60, 0.45), 0 8px 18px rgba(46, 42, 79, 0.06);
+}
+
+.daily-card.is-done {
+  background: linear-gradient(120deg, #eafaf2, #f4fbff);
+  box-shadow: inset 0 0 0 2px rgba(52, 201, 154, 0.35);
+}
+
+.daily-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: #ffffff;
+  background: var(--sun);
+  box-shadow: 0 5px 0 var(--sun-deep);
+}
+
+.daily-card.is-done .daily-icon {
+  background: var(--mint);
+  box-shadow: 0 5px 0 var(--mint-deep);
+}
+
+.daily-icon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.daily-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.daily-copy strong {
+  font-size: 1.35rem;
+  font-weight: 400;
+}
+
+.daily-copy small {
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+}
+
+.daily-card .path-next {
+  min-height: 52px;
+  padding: 0 22px;
+  font-size: 1.15rem;
+}
+
+.daily-card .path-next:disabled {
+  color: #8c89a6;
+  background: #eceaf4;
+  box-shadow: 0 5px 0 #d6d3e5;
+}
+
+.unit-listen {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  margin-left: auto;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--sky-deep);
+  background: #e6f2ff;
+  font-size: 0.98rem;
+}
+
+.unit-listen svg {
+  width: 20px;
+  height: 20px;
+}
+
+.step-tag {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 12px;
+  border-radius: 999px;
+  color: #9a6400;
+  background: #fff1c4;
+  font-size: 0.95rem;
+  vertical-align: middle;
+}
+
+.step-tag.is-again {
+  color: var(--pink-deep);
+  background: #ffe3ec;
+}
+
+.listen-backdrop {
+  z-index: 66;
+}
+
+.listen-sheet {
+  width: min(520px, 100%);
+  text-align: center;
+}
+
+.listen-card {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 22px 12px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, #f6f3ff, #ffffff);
+  box-shadow: inset 0 0 0 2px var(--line);
+  animation: pop-in 420ms var(--spring) both;
+}
+
+.listen-big {
+  display: grid;
+  place-items: center;
+  min-width: 190px;
+  height: 190px;
+  padding: 0 24px;
+  border-radius: 44px;
+  color: #ffffff;
+  background: linear-gradient(180deg, #3b3566, var(--ink));
+  box-shadow: 0 9px 0 #17142e;
+  font-size: 8rem;
+  line-height: 1;
+}
+
+.listen-card.is-word .listen-big {
+  height: 130px;
+  font-size: 4.2rem;
+}
+
+.listen-card strong {
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.listen-example {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.6rem;
+}
+
+.listen-example i {
+  font-style: normal;
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.listen-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  margin: 14px 0;
+}
+
+.listen-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e8e5f3;
+}
+
+.listen-dots i.is-done {
+  background: var(--mint);
+}
+
+.listen-dots i.is-now {
+  background: var(--lilac);
+  transform: scale(1.4);
+}
+
+.listen-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.listen-controls .later-button {
+  min-width: 60px;
+  padding: 0 14px;
+}
+
+.listen-controls .later-button:disabled {
+  opacity: 0.35;
+}
+
+.listen-forward svg {
+  transform: scaleX(-1);
+}
+
+@media (max-width: 560px) {
+  .daily-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .daily-card .path-next {
+    grid-column: 1 / -1;
+  }
+
+  .path-unit h3 {
+    flex-wrap: wrap;
+  }
+
+  .listen-big {
+    min-width: 150px;
+    height: 150px;
+    font-size: 6rem;
+  }
+
+  .listen-card.is-word .listen-big {
+    height: 110px;
+    font-size: 3.2rem;
+  }
+}

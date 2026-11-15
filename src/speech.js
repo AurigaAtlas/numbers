@@ -124,6 +124,7 @@ export const say = {
   pathChart: (syllables) => `${syllables.slice(0, 7).join(", ")}.`,
   pathWords: "낱말을 눌러서 들어봐요.",
   pathDone: "참 잘했어요! 별을 받았어요!",
+  reviewDone: "오늘의 복습 끝! 내일 또 만나요.",
   pathAllDone: "우와! 한글 길을 끝까지 걸었어요!"
 };
 

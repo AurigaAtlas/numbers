@@ -111,6 +111,8 @@ const step = {
     return { ...made, type: "trace" };
   },
   listen: (answer, pool, mode = "jamo") => question("h-listen", { mode, answer, options: choices(answer, pool) }),
+  // The first question about a brand-new letter: only two cards to choose from.
+  listenEasy: (answer, pool) => question("h-listen", { mode: "jamo", answer, options: withDistractors(answer, pool, 2) }),
   picture: (letter, pool) => {
     const entry = pick(words.filter((w) => initialOf(w.word) === letter));
     return question("h-picture", { mode: "initial", entry, answer: letter, options: choices(letter, pool) });
@@ -151,15 +153,65 @@ function syllableQuestion(kind, consonant, vowel) {
   return step.build(consonant, vowel, [...ROW_VOWELS.map((v) => compose(consonant, v)), ...shuffle(row).slice(0, 3)]);
 }
 
-export function buildSteps(lesson) {
+// A question about a letter the child already met, mixing the three question kinds.
+function reviewQuestion(letter, at = 0) {
+  const consonant = CONSONANTS.includes(letter);
+  const pool = known(consonant ? CONSONANTS : VOWELS, letter);
+  const kinds = consonant ? ["listen", "picture", "blend"] : ["listen", "blend", "build"];
+  return (consonant ? consonantQuestion : vowelQuestion)(kinds[at % 3], letter, pool);
+}
+
+// Letters with a finished lesson, or that came up in any game, in teaching order.
+export function learnedLetters(stars = {}, review = {}) {
+  return [...CONSONANTS, ...VOWELS].filter((letter) => stars[`ko:${letter}`] || review[`ko:${letter}`]);
+}
+
+// Which learned letters to bring back first: those due today, then the least practised.
+export function reviewOrder(learned, review = {}, today) {
+  const rank = (letter) => {
+    const entry = review[`ko:${letter}`];
+    if (!entry) return 0;
+    return (entry.due <= today ? 0 : 100) + entry.box;
+  };
+  return shuffle(learned).sort((a, b) => rank(a) - rank(b));
+}
+
+// Asking a missed question once more at the end lets the lesson finish on a success.
+export function repeatStep(original) {
+  const { round } = original;
+  return {
+    ...original,
+    repeat: true,
+    round: { ...round, id: `${Date.now()}-${Math.random()}`, feedback: null, eliminated: [], retried: false, hint: false, lastWrong: undefined, options: shuffle(round.options) }
+  };
+}
+
+export const dailyLesson = { id: "daily", kind: "daily", title: "오늘의 복습" };
+export const DAILY_QUESTIONS = 6;
+
+// 오늘의 복습: a handful of questions on learned letters, due ones first.
+export function buildDaily({ learned, review, today }) {
+  if (learned.length < 2) return null;
+  const asked = reviewOrder(learned, review, today).slice(0, DAILY_QUESTIONS);
+  while (asked.length < Math.min(DAILY_QUESTIONS, 4)) asked.push(pick(learned));
+  return shuffle(asked).map((letter, index) => reviewQuestion(letter, index));
+}
+
+export function buildSteps(lesson, { learned = [], review = {}, today = "" } = {}) {
   if (lesson.kind === "letter") {
     const { letter } = lesson;
-    if (CONSONANTS.includes(letter)) {
-      const pool = known(CONSONANTS, letter);
-      return [step.meet(letter), step.trace(letter), ...["listen", "picture", "blend"].map((kind) => consonantQuestion(kind, letter, pool))];
-    }
-    const pool = known(VOWELS, letter);
-    return [step.meet(letter), step.trace(letter), ...["listen", "blend", "build"].map((kind) => vowelQuestion(kind, letter, pool))];
+    const consonant = CONSONANTS.includes(letter);
+    const all = consonant ? CONSONANTS : VOWELS;
+    const pool = known(all, letter);
+    // Start with one or two letters from before, so old letters keep coming back.
+    const warmups = reviewOrder(learned.filter((item) => item !== letter), review, today)
+      .slice(0, 2)
+      .map((item) => ({ ...reviewQuestion(item, 0), warmup: true }));
+    const others = pool.filter((item) => item !== letter);
+    const questions = consonant
+      ? [step.listenEasy(letter, [letter, pick(others)]), consonantQuestion("picture", letter, pool), consonantQuestion("blend", letter, pool)]
+      : [step.listenEasy(letter, [letter, pick(others)]), vowelQuestion("blend", letter, pool), vowelQuestion("build", letter, pool)];
+    return [...warmups, step.meet(letter), step.trace(letter), ...questions];
   }
 
   if (lesson.kind === "review") {
@@ -191,4 +243,21 @@ export function buildSteps(lesson) {
     { type: "words", entries: lesson.words.map(entryOf) },
     ...shuffle(lesson.words).map((word, index) => (index % 2 === 0 ? step.pictureWord(word, pool) : step.listen(word, pool, "word")))
   ];
+}
+
+// 듣고 따라 읽기: what a unit reads out, one card at a time.
+export function listenItems(unit, stars = {}) {
+  const reached = (lesson) => stars[lesson.id] || pathLessons.indexOf(lesson) <= nextLessonIndex(stars);
+  const lessons = unit.lessons.filter(reached);
+  return lessons.flatMap((lesson) => {
+    if (lesson.kind === "letter") {
+      const example = examplesFor(lesson.letter)[0];
+      return [{ key: lesson.letter, big: lesson.letter, name: letterName(lesson.letter), emoji: example?.emoji, word: example?.word, letter: lesson.letter }];
+    }
+    if (lesson.kind === "row") return rowSyllables(lesson.vowel).map((syllable) => ({ key: syllable, big: syllable, text: syllable }));
+    if (lesson.kind === "words") {
+      return lesson.words.map((word) => ({ key: word, big: word, emoji: entryOf(word).emoji, text: word, isWord: true }));
+    }
+    return [];
+  });
 }

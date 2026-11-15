@@ -202,3 +202,34 @@ export function masteryState(entry) {
   if (entry.w >= 1.5) return "weak";
   return "learning";
 }
+
+// ---------------------------------------------------------------- review
+
+// A letter answered right comes back after a growing gap: 1, 2, 4, 7, then 14 days.
+const REVIEW_GAPS = [0, 1, 2, 4, 7, 14];
+
+function addDays(day, count) {
+  const date = new Date(`${day}T12:00:00`);
+  date.setDate(date.getDate() + count);
+  return dayKey(date);
+}
+
+// `review` maps an item key to { box, due }. A slip sends the letter back to the start
+// (due again today); a right answer only moves it on when it was actually due, so
+// playing the same letter ten times in one day does not skip the spacing.
+export function scheduleReview(review, key, firstTry, day) {
+  if (!key) return review;
+  const entry = review[key];
+  if (!firstTry) return { ...review, [key]: { box: 1, due: day } };
+  if (entry && entry.due > day) return review;
+  const box = Math.min(REVIEW_GAPS.length - 1, (entry?.box ?? 0) + 1);
+  return { ...review, [key]: { box, due: addDays(day, REVIEW_GAPS[box]) } };
+}
+
+// Keys to review today, the shakiest and longest-waiting first.
+export function dueItems(review, day) {
+  return Object.entries(review)
+    .filter(([, entry]) => entry.due <= day)
+    .sort((a, b) => a[1].box - b[1].box || (a[1].due < b[1].due ? -1 : 1))
+    .map(([key]) => key);
+}
