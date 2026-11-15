@@ -33,8 +33,8 @@ import { nextLessonIndex, pathLessons } from "./path";
 import { countingWord, josa, makeRound, numberJosa } from "./rounds";
 import { sfx } from "./sfx";
 import { say as lines } from "./speech";
-import { speak, stopSpeaking } from "./voice";
-import { loadVoicePack, unlockVoicePack, voicePackInfo } from "./voicePack";
+import { installSoundUnlock, prepareSpeech, speak, stopSpeaking } from "./voice";
+import { loadVoicePack, voicePackInfo } from "./voicePack";
 
 const STORAGE_KEY = "numbers-playground-v2";
 const PLAY_TICK_MS = 15000;
@@ -309,9 +309,18 @@ export default function App() {
   }, [settings]);
 
   useEffect(() => {
-    loadVoicePack().then(() => setVoicePack(voicePackInfo()));
-    window.addEventListener("pointerdown", unlockVoicePack, { once: true });
-    return () => window.removeEventListener("pointerdown", unlockVoicePack);
+    loadVoicePack().then(() => {
+      setVoicePack(voicePackInfo());
+      // The lines said most often and most quickly are fetched up front.
+      prepareSpeech([
+        ...praise,
+        ...Array.from({ length: 20 }, (_, index) => lines.counting(index + 1)),
+        lines.secondTryRight,
+        lines.tryAgain,
+        lines.countTogether
+      ]);
+    });
+    return installSoundUnlock();
   }, []);
 
   // Play time: counted while the page is visible and the child touched it in the last minute.
@@ -489,6 +498,8 @@ export default function App() {
       setMessage(game.intro);
     }
     if (promptFor(nextRound)) {
+      const answer = answerFeedback(nextRound);
+      prepareSpeech([promptFor(nextRound), answer ? lines.answerIs(answer.value) : null].filter(Boolean));
       schedule(() => speakPrompt(nextRound), fresh ? 650 : 450);
     }
   }

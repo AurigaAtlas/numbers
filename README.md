@@ -97,6 +97,10 @@ python scripts/voice/generate.py       # 없는 클립만 녹음 → public/voic
 
 녹음에는 pypi.org, download.pytorch.org, huggingface.co, myshell-public-repo-hosting.s3.amazonaws.com 접속이 필요합니다.
 앱의 대사는 모두 `src/speech.js`에 모여 있어, 대사를 바꾼 뒤 위 과정을 다시 하면 새 문장만 녹음됩니다.
+`node scripts/voice/check-coverage.mjs`는 모든 게임을 무작위로 수만 번 돌려 보며 녹음이 빠진 문장이 없는지 확인합니다.
+
+재생할 때는 문장에 필요한 클립을 통째로 내려받아 메모리에 두고 이어서 틉니다(자주 쓰는 "하나, 둘, 셋"과 칭찬은 앱을 열 때 미리 받습니다).
+한 번 받은 클립은 기기에 저장되어 오프라인에서도 나오고, 클립을 못 받거나 2.5초 안에 준비되지 않으면 기기 목소리가 대신 읽습니다.
 
 ### 기기 목소리
 

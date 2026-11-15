@@ -7,7 +7,8 @@ function audio() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) return null;
   if (!context) context = new AudioContextClass();
-  if (context.state === "suspended") context.resume();
+  // "suspended" before the first tap, "interrupted" on iOS after a call or a trip to the home screen.
+  if (context.state !== "running") context.resume().catch(() => {});
   return context;
 }
 
