@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+    <defs>
+      
+  <linearGradient id="b1" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ff9cb6"/>
+    <stop offset="1" stop-color="#ea4f7a"/>
+  </linearGradient>
+      
+  <linearGradient id="b2" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#8fd0ff"/>
+    <stop offset="1" stop-color="#3487ee"/>
+  </linearGradient>
+      
+  <linearGradient id="b3" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffe07a"/>
+    <stop offset="1" stop-color="#f0a700"/>
+  </linearGradient>
+    </defs>
+    <ellipse cx="128" cy="240" rx="92" ry="10" fill="#5a3a5e" opacity="0.12"/>
+    
+    <path d="M70 150 q-10 26 6 52" fill="none" stroke="#b9a8d8" stroke-width="3" stroke-linecap="round"/>
+    <path d="M62 150 L78 150 L70 138Z" fill="#3487ee"/>
+    <ellipse cx="70" cy="96" rx="46" ry="52.44" fill="url(#b2)"/>
+    <ellipse cx="52.519999999999996" cy="73" rx="9.200000000000001" ry="14.72" fill="#ffffff" opacity="0.5" transform="rotate(-24 52.519999999999996 73)"/>
+    <path d="M50 80 H90 M50 80 V112 H90" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <path d="M190 156 q-10 26 6 52" fill="none" stroke="#b9a8d8" stroke-width="3" stroke-linecap="round"/>
+    <path d="M182 156 L198 156 L190 144Z" fill="#f0a700"/>
+    <ellipse cx="190" cy="104" rx="44" ry="50.16" fill="url(#b3)"/>
+    <ellipse cx="173.28" cy="82" rx="8.8" ry="14.08" fill="#ffffff" opacity="0.5" transform="rotate(-24 173.28 82)"/>
+    <path d="M210 88 H172 V122 H210" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <path d="M130 138 q-10 26 6 52" fill="none" stroke="#b9a8d8" stroke-width="3" stroke-linecap="round"/>
+    <path d="M122 138 L138 138 L130 126Z" fill="#ea4f7a"/>
+    <ellipse cx="130" cy="78" rx="52" ry="59.279999999999994" fill="url(#b1)"/>
+    <ellipse cx="110.24" cy="52" rx="10.4" ry="16.64" fill="#ffffff" opacity="0.5" transform="rotate(-24 110.24 52)"/>
+    <path d="M108 58 H152 V100" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M34 31 Q35.62 38.38 43 40 Q35.62 41.62 34 49 Q32.38 41.62 25 40 Q32.38 38.38 34 31Z" fill="#fff6c2"/>
+    <path d="M226 25 Q227.98 34.02 237 36 Q227.98 37.98 226 47 Q224.02 37.98 215 36 Q224.02 34.02 226 25Z" fill="#fff6c2"/>
+    <path d="M222 173 Q223.26 178.74 229 180 Q223.26 181.26 222 187 Q220.74 181.26 215 180 Q220.74 178.74 222 173Z" fill="#ffffff"/></svg>

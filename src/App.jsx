@@ -23,16 +23,18 @@ import {
   TrophyIcon
 } from "./icons";
 import { bump, centerOf, flyCoins, prefersReducedMotion, viewportCenter } from "./motion";
-import { hangulLevels, makeHangulRound } from "./hangul";
-import { MISSION_REWARD, applyMissionEvent, dayKey, ensureDaily, itemKey, logPlay, missionsDone, recordResult } from "./learning";
+import { blendParts, hangulLevels, makeHangulRound, spokenForm } from "./hangul";
+import { MISSION_REWARD, applyMissionEvent, dayKey, dueItems, ensureDaily, itemKey, logPlay, missionsDone, recordResult, scheduleReview } from "./learning";
 import { MissionPanel } from "./Missions";
 import { LevelUpOverlay, SettingsSheet } from "./overlays";
 import { BreakOverlay, ParentGate, ReportSheet } from "./parent";
+import { Path } from "./Path";
+import { nextLessonIndex, pathLessons } from "./path";
 import { countingWord, josa, makeRound, numberJosa } from "./rounds";
 import { sfx } from "./sfx";
 import { say as lines } from "./speech";
-import { speak, stopSpeaking } from "./voice";
-import { loadVoicePack, unlockVoicePack, voicePackInfo } from "./voicePack";
+import { installSoundUnlock, prepareSpeech, speak, stopSpeaking } from "./voice";
+import { loadVoicePack, voicePackInfo } from "./voicePack";
 
 const STORAGE_KEY = "numbers-playground-v2";
 const PLAY_TICK_MS = 15000;
@@ -69,7 +71,10 @@ const defaultState = {
   mastery: {},
   daily: null,
   board: null,
-  history: {}
+  history: {},
+  path: { stars: {} },
+  review: {},
+  reviewDay: null
 };
 
 const defaultSettings = {
@@ -100,6 +105,12 @@ const tracks = {
     rangeText: (level) => level.perk
   }
 };
+
+// Single letters (ㄱ, ㅏ) are the items that come back in 오늘의 복습.
+function reviewKey(round) {
+  const key = itemKey(round);
+  return key && /^ko:[ㄱ-ㅎㅏ-ㅣ]$/.test(key) ? key : null;
+}
 
 function trackOf(gameId) {
   return gameId.startsWith("h-") ? "hangul" : "numbers";
@@ -162,7 +173,9 @@ function normalizeState(rawState) {
     mastery: rawState?.mastery ?? {},
     daily: ensureDaily(rawState?.daily, todayKey()),
     board: normalizeBoard(rawState?.board),
-    history: rawState?.history ?? {}
+    history: rawState?.history ?? {},
+    path: { stars: rawState?.path?.stars ?? {} },
+    review: rawState?.review ?? {}
   };
 }
 
@@ -216,7 +229,7 @@ function promptFor(round) {
 // After a wrong answer: what to show, and the answer to read aloud, when there is one.
 function answerFeedback(round) {
   if (trackOf(round.gameId) === "hangul") {
-    return round.gameId === "h-trace" ? null : { show: round.answer, value: round.answer };
+    return round.answer === undefined ? null : { show: round.answer, value: round.answer };
   }
   const number = ["find", "count", "missing", "add"].includes(round.gameId)
     ? round.answer
@@ -305,9 +318,18 @@ export default function App() {
   }, [settings]);
 
   useEffect(() => {
-    loadVoicePack().then(() => setVoicePack(voicePackInfo()));
-    window.addEventListener("pointerdown", unlockVoicePack, { once: true });
-    return () => window.removeEventListener("pointerdown", unlockVoicePack);
+    loadVoicePack().then(() => {
+      setVoicePack(voicePackInfo());
+      // The lines said most often and most quickly are fetched up front.
+      prepareSpeech([
+        ...praise,
+        ...Array.from({ length: 20 }, (_, index) => lines.counting(index + 1)),
+        lines.secondTryRight,
+        lines.tryAgain,
+        lines.countTogether
+      ]);
+    });
+    return installSoundUnlock();
   }, []);
 
   // Play time: counted while the page is visible and the child touched it in the last minute.
@@ -389,13 +411,13 @@ export default function App() {
     setSettings((current) => ({ ...current, ...patch }));
   }
 
-  function say(text, { track = false, voiceURI, rate } = {}) {
+  function say(text, { track = false, voiceURI, rate, onEnd } = {}) {
     const current = settingsRef.current;
     speak(text, {
       voiceURI: voiceURI ?? current.voiceURI,
       rate: rate ?? current.rate,
       onStart: track ? () => setSpeaking(true) : undefined,
-      onEnd: track ? () => setSpeaking(false) : undefined
+      onEnd: track ? () => setSpeaking(false) : onEnd
     });
   }
 
@@ -485,6 +507,8 @@ export default function App() {
       setMessage(game.intro);
     }
     if (promptFor(nextRound)) {
+      const answer = answerFeedback(nextRound);
+      prepareSpeech([promptFor(nextRound), answer ? lines.answerIs(answer.value) : null].filter(Boolean));
       schedule(() => speakPrompt(nextRound), fresh ? 650 : 450);
     }
   }
@@ -563,9 +587,11 @@ export default function App() {
     }
     if (settingsRef.current.praiseVoice) {
       const answer = answerFeedback(finishedRound);
-      const line = correct
+      // 소리 합치기 says the finished blend first: "드, 오, 도! 잘했어!"
+      const lead = finishedRound.gameId === "h-blend" ? `${lines.blend(blendParts(finishedRound))} ` : "";
+      const line = lead + (correct
         ? combo ? lines.combo(streak) : secondTry ? lines.secondTryRight : word
-        : answer ? lines.answerIs(answer.value) : lines.tryAgain;
+        : answer ? lines.answerIs(answer.value) : lines.tryAgain);
       schedule(() => say(line), correct ? 250 : 350);
     }
     setMood({ id: Date.now(), type: correct ? "happy" : "oops" });
@@ -586,6 +612,7 @@ export default function App() {
       progress: nextProgress,
       mastery,
       daily,
+      review: scheduleReview(latest.review, reviewKey(finishedRound), firstTry, todayKey()),
       history: logPlay(latest.history, todayKey(), { track, firstTry })
     }));
     schedule(() => coinsToWallet(viewportCenter(), correct ? 6 : 3), correct ? 420 : 500);
@@ -656,6 +683,13 @@ export default function App() {
         setMessage("두 친구를 천천히 합쳐봐!");
         say(lines.buildHint(target.consonant, target.vowel), { rate: "slow" });
         break;
+      case "h-blend": {
+        // Let the child hear what the wrong piece makes, then what to aim for.
+        const made = blendParts(target, target.lastWrong);
+        setMessage(`${josa(made.syllable, "이", "가")} 됐어! ${josa(target.target, "을", "를")} 만들어 볼까?`);
+        say(`${lines.blend(made)} ${lines.notThis(made.syllable, target.target)}`, { rate: "slow" });
+        break;
+      }
       default:
         setMessage("한 번 더 해보자!");
     }
@@ -718,15 +752,17 @@ export default function App() {
   }
 
   function chooseMemory(cardId) {
-    if (!round || round.gameId !== "memory" || round.resolving || round.feedback) return;
+    if (!round || !round.gameId.endsWith("memory") || round.resolving || round.feedback) return;
+    const letters = round.gameId === "h-memory";
     const card = round.cards.find((candidate) => candidate.id === cardId);
     if (!card || card.matched || round.flipped.includes(cardId)) return;
 
     sfx.flip();
+    if (letters) say(card.say);
     const flipped = [...round.flipped, cardId];
     if (flipped.length === 1) {
       setRound({ ...round, flipped });
-      setMessage("같은 숫자 카드를 하나 더 찾아봐.");
+      setMessage(letters ? "짝이 되는 카드를 찾아봐." : "같은 숫자 카드를 하나 더 찾아봐.");
       return;
     }
 
@@ -771,14 +807,20 @@ export default function App() {
   }
 
   function popBalloon(balloonId) {
-    if (!round || round.gameId !== "balloon" || round.feedback) return;
+    if (!round || !round.gameId.endsWith("balloon") || round.feedback) return;
     const balloon = round.balloons.find((candidate) => candidate.id === balloonId);
     if (!balloon || round.popped.includes(balloonId)) return;
 
     if (balloon.value !== round.target) {
       sfx.wrong();
       setRound({ ...round, wrong: { id: balloonId, key: Date.now() } });
-      setMessage(`그건 ${balloon.value}! ${numberJosa(round.target, "을", "를")} 찾아봐.`);
+      if (round.gameId === "h-balloon") {
+        // Hearing what was popped helps tell the letters apart.
+        say(spokenForm(balloon.value));
+        setMessage(`그건 ${balloon.value}! ${round.target} 풍선을 찾아봐.`);
+      } else {
+        setMessage(`그건 ${balloon.value}! ${numberJosa(round.target, "을", "를")} 찾아봐.`);
+      }
       return;
     }
 
@@ -791,6 +833,30 @@ export default function App() {
     }
     setRound({ ...round, popped, wrong: null });
     setMessage(`펑! ${round.goal - popped.length}개 더 찾아봐.`);
+  }
+
+  function openPath() {
+    sfx.tap();
+    clearTimers();
+    setScreen("path");
+    setMessage("한글 길을 따라가 보자!");
+  }
+
+  // A finished 한글 길 lesson: keep the best star count and pay the reward.
+  // 오늘의 복습 is not a step on the path, so it only notes that today's review is done.
+  function completeLesson(lesson, stars, reward) {
+    updateProfile((current) => ({
+      ...current,
+      coins: current.coins + reward,
+      path: lesson.kind === "daily"
+        ? current.path
+        : { stars: { ...current.path.stars, [lesson.id]: Math.max(current.path.stars[lesson.id] ?? 0, stars) } },
+      reviewDay: lesson.kind === "daily" ? todayKey() : current.reviewDay,
+      daily: applyMissionEvent(ensureDaily(current.daily, todayKey()), { pathLesson: true })
+    }));
+    triggerCelebration(reward, "참 잘했어요!");
+    setMood({ id: Date.now(), type: "happy" });
+    schedule(() => coinsToWallet(viewportCenter(), 6), 420);
   }
 
   function openBoard() {
@@ -816,6 +882,7 @@ export default function App() {
     updateProfile((current) => ({
       ...current,
       mastery: recordResult(current.mastery, itemKey(learnRound), firstTry),
+      review: scheduleReview(current.review, reviewKey(learnRound), firstTry, todayKey()),
       history: logPlay(current.history, todayKey(), { track: trackOf(learnRound.gameId), firstTry }),
       daily: applyMissionEvent(ensureDaily(current.daily, todayKey()), {
         gameId: learnRound.gameId,
@@ -1055,6 +1122,7 @@ export default function App() {
               onPickLevel={(levelId) => pickLevel(subject, levelId)}
               onDex={openDex}
               onBoard={openBoard}
+              onPath={openPath}
               onClaimMissions={claimMissions}
             />
           )}
@@ -1074,6 +1142,7 @@ export default function App() {
               onMemory={chooseMemory}
               onBalloon={popBalloon}
               onTraced={finishTrace}
+              onSay={(text) => say(text)}
             />
           )}
 
@@ -1090,6 +1159,20 @@ export default function App() {
               onLearn={boardLearn}
               onCelebrate={triggerCelebration}
               onRoll={boardRoll}
+            />
+          )}
+
+          {screen === "path" && (
+            <Path
+              stars={profile.path.stars}
+              review={profile.review}
+              today={todayKey()}
+              reviewedToday={profile.reviewDay === todayKey()}
+              say={say}
+              setMessage={setMessage}
+              onBack={goHome}
+              onLearn={boardLearn}
+              onComplete={completeLesson}
             />
           )}
 
@@ -1299,7 +1382,7 @@ function Character({ equippedItems, message, roomItem, progress, mood }) {
   );
 }
 
-function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLevel, onDex, onBoard, onClaimMissions }) {
+function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLevel, onDex, onBoard, onPath, onClaimMissions }) {
   const track = tracks[subject];
   const { level: unlocked, playLevel, levelStars } = trackState(profile.progress, subject);
   const trackLevels = track.levels;
@@ -1356,6 +1439,34 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
           </button>
         </div>
       </section>
+
+      {subject === "hangul" && (() => {
+        const stars = profile.path.stars;
+        const at = nextLessonIndex(stars);
+        const next = pathLessons[at];
+        const due = dueItems(profile.review, todayKey()).length;
+        return (
+          <button className="path-banner enter" style={{ "--i": 2 }} onClick={onPath}>
+            <span className="path-banner-stones" aria-hidden="true">
+              {[at - 1, at, at + 1].map((n) => (
+                <i key={n} className={n < at ? "is-done" : n === at ? "is-next" : ""}>
+                  {pathLessons[n] ? (pathLessons[n].kind.includes("eview") ? "★" : pathLessons[n].label[0]) : ""}
+                </i>
+              ))}
+            </span>
+            <span className="banner-copy">
+              <strong>한글 길</strong>
+              <small>
+                {next
+                  ? `ㄱ부터 차례대로 배워요 · 다음: ${next.title} (${at}/${pathLessons.length})`
+                  : "끝까지 다 걸었어요! 다시 해볼 수 있어요"}
+                {due > 0 && profile.reviewDay !== todayKey() && <b className="banner-due">오늘 복습 {due}개</b>}
+              </small>
+            </span>
+            <span className="play-dot"><PlayIcon /></span>
+          </button>
+        );
+      })()}
 
       <MissionPanel daily={ensureDaily(profile.daily, todayKey())} onClaim={onClaimMissions} />
 

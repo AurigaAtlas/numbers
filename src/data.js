@@ -340,6 +340,36 @@ export const hangulGameCards = [
     reward: 10
   },
   {
+    id: "h-blend",
+    track: "hangul",
+    title: "소리 합치기",
+    subtitle: "소리를 합쳐서 글자를 읽어요",
+    intro: "드, 오, 도! 소리를 합쳐 보자!",
+    image: "./assets/game-h-blend.webp",
+    color: "pink",
+    reward: 10
+  },
+  {
+    id: "h-balloon",
+    track: "hangul",
+    title: "글자 풍선",
+    subtitle: "들은 글자 풍선을 터뜨려요",
+    intro: "잘 듣고 그 글자 풍선을 터뜨려봐!",
+    image: "./assets/game-h-balloon.webp",
+    color: "sun",
+    reward: 11
+  },
+  {
+    id: "h-memory",
+    track: "hangul",
+    title: "글자 짝 맞추기",
+    subtitle: "글자와 그림 짝을 찾아요",
+    intro: "카드를 뒤집어서 글자랑 짝을 찾아봐!",
+    image: "./assets/game-h-memory.webp",
+    color: "teal",
+    reward: 12
+  },
+  {
     id: "h-trace",
     track: "hangul",
     title: "따라 쓰기",

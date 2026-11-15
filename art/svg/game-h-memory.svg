@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+    <defs>
+      
+  <linearGradient id="c1" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffffff"/>
+    <stop offset="1" stop-color="#e6f7f4"/>
+  </linearGradient>
+      
+  <linearGradient id="c2" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffffff"/>
+    <stop offset="1" stop-color="#fff1d6"/>
+  </linearGradient>
+      
+  <linearGradient id="back" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#55d3bf"/>
+    <stop offset="1" stop-color="#149c88"/>
+  </linearGradient>
+      
+  <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#7fdc8f"/>
+    <stop offset="1" stop-color="#2fa457"/>
+  </linearGradient>
+    </defs>
+    <ellipse cx="128" cy="238" rx="100" ry="11" fill="#5a3a5e" opacity="0.13"/>
+    <g transform="rotate(-10 84 136)">
+      <rect x="26" y="52" width="112" height="150" rx="22" fill="url(#back)"/>
+      <rect x="20" y="44" width="112" height="150" rx="22" fill="url(#c1)" stroke="#19a892" stroke-width="6"/>
+      <path d="M52 84 V150 H104" fill="none" stroke="#149c88" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g transform="rotate(9 176 130)">
+      <rect x="122" y="60" width="112" height="150" rx="22" fill="url(#c2)" stroke="#f0a700" stroke-width="6"/>
+      <rect x="170" y="140" width="16" height="44" rx="6" fill="#a8703f"/>
+      <circle cx="178" cy="118" r="34" fill="url(#leaf)"/>
+      <circle cx="158" cy="134" r="20" fill="url(#leaf)"/>
+      <circle cx="200" cy="134" r="20" fill="url(#leaf)"/>
+      <circle cx="166" cy="104" r="8" fill="#ffffff" opacity="0.4"/>
+    </g>
+    <path d="M128 30 C118 16 98 24 104 40 C108 52 128 62 128 62 C128 62 148 52 152 40 C158 24 138 16 128 30Z" fill="#ff7fa6"/>
+    <path d="M30 26 Q31.44 32.56 38 34 Q31.44 35.44 30 42 Q28.56 35.44 22 34 Q28.56 32.56 30 26Z" fill="#fff6c2"/>
+    <path d="M232 35 Q233.62 42.38 241 44 Q233.62 45.62 232 53 Q230.38 45.62 223 44 Q230.38 42.38 232 35Z" fill="#fff6c2"/></svg>

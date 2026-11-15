@@ -13,7 +13,7 @@ const { say, splitSpeech, praise } = await load("/src/speech.js");
 const { CONSONANTS, VOWELS, words, compose, hangulLevels } = await load("/src/hangul.js");
 const { levels, praise: gamePraise } = await load("/src/data.js");
 const { tiles, houseNames, personNames, robotNames, MAX_MONEY, PASS_START_REWARD, PIGGY_FEE, QUIZ_REWARD, SCHOOL_REWARD } = await load("/src/board.js");
-const { initialOf } = await load("/src/hangul.js");
+const { initialOf, blendParts, letterSound, BLEND_FINALS } = await load("/src/hangul.js");
 
 const pieces = new Set();
 const add = (text) => {
@@ -76,6 +76,58 @@ for (const entry of words) {
   add(say.prompt({ gameId: "h-listen", mode: "word", answer: entry.word }));
   add(say.prompt({ gameId: "h-trace", target: first }));
   for (const mode of ["initial", "syllable", "word"]) add(say.prompt({ gameId: "h-picture", mode, entry }));
+}
+
+// 소리 합치기: every syllable a round can aim for or end up making.
+const blendVowels = "ㅏㅓㅗㅜㅣ".split("");
+const blendRounds = [];
+for (const consonant of CONSONANTS) {
+  for (const vowel of blendVowels) {
+    blendRounds.push({ gameId: "h-blend", mode: "consonant", consonant, vowel, final: null, answer: consonant });
+    blendRounds.push({ gameId: "h-blend", mode: "vowel", consonant, vowel, final: null, answer: vowel });
+  }
+  for (const final of BLEND_FINALS) {
+    blendRounds.push({ gameId: "h-blend", mode: "final", consonant, vowel: "ㅏ", final, answer: final });
+  }
+}
+for (const round of blendRounds) {
+  const parts = blendParts(round);
+  const full = { ...round, target: parts.syllable };
+  add(say.prompt(full));
+  add(say.blend(parts));
+  add(say.notThis(parts.syllable, parts.syllable));
+  add(parts.base);
+  add(parts.syllable);
+}
+CONSONANTS.forEach((c) => add(letterSound(c)));
+blendVowels.forEach((v) => add(letterSound(v)));
+BLEND_FINALS.forEach((f) => add(letterSound(f, true)));
+
+// 한글 길, 글자 풍선, 글자 짝 맞추기.
+const { PATH_BLEND_CONSONANTS, rowSyllables } = await load("/src/path.js");
+for (const letter of [...CONSONANTS, ...VOWELS]) {
+  add(say.pathMeet(letter));
+  add(say.prompt({ gameId: "h-balloon", target: letter }));
+}
+for (const vowel of blendVowels) add(say.pathChart(rowSyllables(vowel)));
+[say.pathWords, say.pathDone, say.pathAllDone, say.reviewDone].forEach(add);
+for (const consonant of CONSONANTS) {
+  for (const vowel of VOWELS) add(compose(consonant, vowel)); // tapped syllables, popped balloons
+  for (const vowel of blendVowels) add(say.prompt({ gameId: "h-balloon", target: compose(consonant, vowel) }));
+}
+// A new vowel is tried out with a few easy consonants (ㄱ + ? = 갸).
+for (const consonant of PATH_BLEND_CONSONANTS) {
+  for (const vowel of VOWELS) {
+    const round = { gameId: "h-blend", mode: "vowel", consonant, vowel, final: null, answer: vowel };
+    const parts = blendParts(round);
+    add(say.prompt({ ...round, target: parts.syllable }));
+    add(say.blend(parts));
+    add(say.notThis(parts.syllable, parts.syllable));
+  }
+}
+for (const entry of words) {
+  add(entry.word); // memory cards and word cards read the word alone
+  add(entry.word[0]);
 }
 
 // 주사위 마을.

@@ -14,7 +14,10 @@ export function itemKey(round) {
       return `ko:${round.answer}`;
     case "h-build":
       return `ko:${round.consonant}`;
+    case "h-blend":
+      return `ko:${round.answer}`;
     case "h-trace":
+    case "h-balloon":
       return `ko:${round.target}`;
     default:
       return null;
@@ -65,13 +68,15 @@ const missionPool = {
     { type: "hangulCorrect", target: 5, text: "한글 놀이 5번 맞히기", icon: "가" },
     { type: "trace", target: 2, text: "따라 쓰기 2번 하기", icon: "✏️" },
     { type: "build", target: 3, text: "글자 만들기 3번 맞히기", icon: "🧩" },
-    { type: "picture", target: 3, text: "그림 글자 3번 맞히기", icon: "🖼️" }
+    { type: "picture", target: 3, text: "그림 글자 3번 맞히기", icon: "🖼️" },
+    { type: "blend", target: 3, text: "소리 합치기 3번 맞히기", icon: "🔊" }
   ],
   fun: [
     { type: "streak", target: 3, text: "3번 연속 맞히기", icon: "🔥" },
     { type: "dex", target: 3, text: "도감에서 3개 들어보기", icon: "📖" },
     { type: "streak", target: 5, text: "5번 연속 맞히기", icon: "🔥" },
-    { type: "board", target: 3, text: "주사위 마을 3번 굴리기", icon: "🎲" }
+    { type: "board", target: 3, text: "주사위 마을 3번 굴리기", icon: "🎲" },
+    { type: "path", target: 1, text: "한글 길 한 칸 가기", icon: "🛤️" }
   ]
 };
 
@@ -123,6 +128,9 @@ export function applyMissionEvent(daily, event) {
       case "picture":
         if (correct && event.gameId === "h-picture") progress += 1;
         break;
+      case "blend":
+        if (correct && event.gameId === "h-blend") progress += 1;
+        break;
       case "streak":
         if (event.streak !== undefined) progress = Math.max(progress, event.streak);
         break;
@@ -131,6 +139,9 @@ export function applyMissionEvent(daily, event) {
         break;
       case "board":
         if (event.boardRoll) progress += 1;
+        break;
+      case "path":
+        if (event.pathLesson) progress += 1;
         break;
       default:
         break;
@@ -190,4 +201,35 @@ export function masteryState(entry) {
   if (isMastered(entry)) return "mastered";
   if (entry.w >= 1.5) return "weak";
   return "learning";
+}
+
+// ---------------------------------------------------------------- review
+
+// A letter answered right comes back after a growing gap: 1, 2, 4, 7, then 14 days.
+const REVIEW_GAPS = [0, 1, 2, 4, 7, 14];
+
+function addDays(day, count) {
+  const date = new Date(`${day}T12:00:00`);
+  date.setDate(date.getDate() + count);
+  return dayKey(date);
+}
+
+// `review` maps an item key to { box, due }. A slip sends the letter back to the start
+// (due again today); a right answer only moves it on when it was actually due, so
+// playing the same letter ten times in one day does not skip the spacing.
+export function scheduleReview(review, key, firstTry, day) {
+  if (!key) return review;
+  const entry = review[key];
+  if (!firstTry) return { ...review, [key]: { box: 1, due: day } };
+  if (entry && entry.due > day) return review;
+  const box = Math.min(REVIEW_GAPS.length - 1, (entry?.box ?? 0) + 1);
+  return { ...review, [key]: { box, due: addDays(day, REVIEW_GAPS[box]) } };
+}
+
+// Keys to review today, the shakiest and longest-waiting first.
+export function dueItems(review, day) {
+  return Object.entries(review)
+    .filter(([, entry]) => entry.due <= day)
+    .sort((a, b) => a[1].box - b[1].box || (a[1].due < b[1].due ? -1 : 1))
+    .map(([key]) => key);
 }

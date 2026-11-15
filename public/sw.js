@@ -38,7 +38,7 @@ async function networkFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   try {
     const response = await fetch(request);
-    if (response.ok) cache.put(request, response.clone());
+    if (response.status === 200) cache.put(request, response.clone()).catch(() => {});
     return response;
   } catch (error) {
     const cached = await cache.match(request, { ignoreSearch: true });
@@ -52,7 +52,8 @@ async function staleWhileRevalidate(request, cacheName) {
   const cached = await cache.match(request);
   const refresh = fetch(request)
     .then((response) => {
-      if (response.ok || response.type === "opaque") cache.put(request, response.clone());
+      // Only whole responses can be stored: a partial (206) one would make put() throw.
+      if (response.status === 200 || response.type === "opaque") cache.put(request, response.clone()).catch(() => {});
       return response;
     })
     .catch(() => cached);

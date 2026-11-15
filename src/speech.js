@@ -1,6 +1,6 @@
 // Every sentence the app speaks is built here, so the voice-pack catalog
 // (scripts/voice/build-catalog.mjs) can enumerate them all and pre-record them.
-import { CONSONANTS, compose, exampleWord, hangulPrompt, letterName, spokenForm, words } from "./hangul";
+import { CONSONANTS, compose, exampleWord, hangulPrompt, letterName, letterSound, spokenForm, words } from "./hangul";
 import { countingWord, josa, nativeCount, sinoWord } from "./rounds";
 
 export const praise = ["잘했어!", "멋져!", "좋았어!", "정말 정확해!", "최고야!"];
@@ -65,6 +65,11 @@ export const say = {
   missingHint: (step) => `${countingWord(Math.abs(step))}씩 ${step > 0 ? "커지고" : "작아지고"} 있어!`,
   slowWord: (word) => word.split("").join(", "),
   buildHint: (consonant, vowel) => `${spokenForm(consonant)}, ${spokenForm(vowel)}`,
+  // 소리 합치기: "드, 오, 도!" or, with a 받침, "가, 은, 간!".
+  blend: (parts) => (parts.final
+    ? `${parts.base}, ${letterSound(parts.final, true)}, ${parts.syllable}!`
+    : `${letterSound(parts.consonant)}, ${letterSound(parts.vowel)}, ${parts.syllable}!`),
+  notThis: (made, target) => `${josa(made, "은", "는")} 아니에요. ${josa(target, "을", "를")} 만들어 봐요.`,
   orderHint: (next) => `${josa(sinoWord(next), "을", "를")} 찾아봐`,
 
   // 도감.
@@ -106,7 +111,21 @@ export const say = {
   tie: "똑같이 모았어요! 모두 우승!",
   // Written out ("이층") so recorded voices do not have to guess how to read "2층".
   upgraded: (houseName) => `우와! ${josa(houseName.replace(/2층/g, "이층"), "이", "가")} 되었어요!`,
-  quizRight: "정답이에요!"
+  quizRight: "정답이에요!",
+
+  // 한글 길.
+  pathMeet(letter) {
+    const name = letterName(letter);
+    if (!CONSONANTS.includes(letter)) return say.dex(letter);
+    const example = exampleWord(letter);
+    const sound = letter === "ㅇ" ? "앞에 오면 소리가 없어요." : `${letterSound(letter)} 소리가 나요.`;
+    return `${name}. ${sound}${example ? ` ${example.word}의 ${name}.` : ""}`;
+  },
+  pathChart: (syllables) => `${syllables.slice(0, 7).join(", ")}.`,
+  pathWords: "낱말을 눌러서 들어봐요.",
+  pathDone: "참 잘했어요! 별을 받았어요!",
+  reviewDone: "오늘의 복습 끝! 내일 또 만나요.",
+  pathAllDone: "우와! 한글 길을 끝까지 걸었어요!"
 };
 
 // Sentences are recorded and played back piece by piece, split after . ! ? and ,

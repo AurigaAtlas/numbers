@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { ResetIcon } from "./icons";
-import { isJamo, letterName, letterTone } from "./hangul";
+import { ResetIcon, SpeakerIcon } from "./icons";
+import { blendParts, isJamo, letterName, letterSound, letterTone } from "./hangul";
 
 // Answer cards are coloured by position, not by letter, and the question uses one
 // fixed highlight colour, so children have to read the letters instead of matching colours.
@@ -97,6 +97,51 @@ export function HangulBuild({ round, onAnswer }) {
           {solved ? round.answer : "?"}
         </span>
       </div>
+      <LetterGrid round={round} onAnswer={onAnswer} />
+    </>
+  );
+}
+
+// 소리 합치기: every piece says its own sound when tapped, so children can try the
+// blend out loud before choosing the missing piece.
+export function HangulBlend({ round, onAnswer, onSay }) {
+  const solved = round.feedback?.correct;
+  const parts = blendParts(round);
+  const piece = (kind, jamo, sound, extra = "") => (round.mode === kind && !solved ? (
+    <span className={`blend-piece is-missing ${extra}`}>?</span>
+  ) : (
+    <button className={`blend-piece ${extra} ${round.mode === kind ? "is-found" : ""}`} onClick={() => onSay(sound)}>
+      {jamo}
+      <small>{sound}</small>
+    </button>
+  ));
+  return (
+    <>
+      <div className={`blend-stage ${solved ? "is-solved" : ""}`}>
+        {round.mode === "final" ? (
+          <button className="blend-piece is-base" onClick={() => onSay(parts.base)}>
+            {parts.base}
+          </button>
+        ) : (
+          <>
+            {piece("consonant", parts.consonant, letterSound(parts.consonant))}
+            <span className="build-plus">+</span>
+            {piece("vowel", parts.vowel, letterSound(parts.vowel), "is-vowel")}
+          </>
+        )}
+        {round.mode === "final" && (
+          <>
+            <span className="build-plus">+</span>
+            {piece("final", parts.final, letterSound(parts.final, true), "is-final")}
+          </>
+        )}
+        <span className="build-plus">=</span>
+        <button className="blend-target" onClick={() => onSay(round.target)} aria-label={`${round.target} 듣기`}>
+          {round.target}
+          <SpeakerIcon />
+        </button>
+      </div>
+      <p className="blend-tip">글자를 누르면 소리가 나요</p>
       <LetterGrid round={round} onAnswer={onAnswer} />
     </>
   );
