@@ -4,6 +4,7 @@ import { stickerCount } from "./Dex";
 import { masteryState, recentDays, weakItems } from "./learning";
 import { levels } from "./data";
 import { pathLessons } from "./path";
+import { stageOf } from "./princess";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -197,6 +198,7 @@ export function ReportSheet({ profile, onClose }) {
             <span>숫자 {progress.level}단계 · {levels[progress.level - 1].name}</span>
             <span>한글 {progress.hangulLevel}단계 · {hangulLevels[progress.hangulLevel - 1].name}</span>
             <span>스티커 숫자 {stickerCount("numbers", mastery)}/20 · 한글 {stickerCount("hangul", mastery)}/24</span>
+            <span>공주 {stageOf(profile.growth).id}단계 · {stageOf(profile.growth).name}</span>
             <span>한글 길 {pathLessons.filter((lesson) => profile.path?.stars?.[lesson.id]).length}/{pathLessons.length}칸</span>
           </div>
         </div>

@@ -29,6 +29,8 @@ import { MissionPanel } from "./Missions";
 import { LevelUpOverlay, SettingsSheet } from "./overlays";
 import { BreakOverlay, ParentGate, ReportSheet } from "./parent";
 import { Path } from "./Path";
+import { GrowthChip, GrowthOverlay, PrincessDoll } from "./Princess";
+import { GROWTH_COINS, LESSON_STARS, stageOf } from "./princess";
 import { nextLessonIndex, pathLessons } from "./path";
 import { countingWord, josa, makeRound, numberJosa } from "./rounds";
 import { sfx } from "./sfx";
@@ -74,7 +76,8 @@ const defaultState = {
   history: {},
   path: { stars: {} },
   review: {},
-  reviewDay: null
+  reviewDay: null,
+  growth: 0
 };
 
 const defaultSettings = {
@@ -175,7 +178,9 @@ function normalizeState(rawState) {
     board: normalizeBoard(rawState?.board),
     history: rawState?.history ?? {},
     path: { stars: rawState?.path?.stars ?? {} },
-    review: rawState?.review ?? {}
+    review: rawState?.review ?? {},
+    // Growth stars start from the answers already given, so a returning child keeps her progress.
+    growth: Number.isFinite(rawState?.growth) ? rawState.growth : rawState?.progress?.correctAnswers ?? 0
   };
 }
 
@@ -290,6 +295,7 @@ export default function App() {
   const [shopFx, setShopFx] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [levelUp, setLevelUp] = useState(null);
+  const [growth, setGrowth] = useState(null);
   const [subject, setSubject] = useState(loadSubject);
   const [voicePack, setVoicePack] = useState(null);
   const [gate, setGate] = useState(null);
@@ -305,6 +311,7 @@ export default function App() {
 
   const shownCoins = useCountUp(profile.coins);
   const gatePassedAt = useRef(0);
+  const pendingGrowth = useRef(null); // shown after a level-up overlay closes
   const onBreakRef = useRef(onBreak);
   onBreakRef.current = onBreak;
 
@@ -606,6 +613,7 @@ export default function App() {
       schedule(() => showToast("오늘의 미션 완료! 보물상자를 열어봐", "success"), 1200);
     }
     const mastery = recordResult(latestProfile.mastery, itemKey(finishedRound), firstTry);
+    const grew = correct ? growthStep(1) : null;
     updateProfile((latest) => ({
       ...latest,
       coins: latest.coins + reward,
@@ -613,11 +621,13 @@ export default function App() {
       mastery,
       daily,
       review: scheduleReview(latest.review, reviewKey(finishedRound), firstTry, todayKey()),
-      history: logPlay(latest.history, todayKey(), { track, firstTry })
+      history: logPlay(latest.history, todayKey(), { track, firstTry }),
+      growth: latest.growth + (correct ? 1 : 0)
     }));
     schedule(() => coinsToWallet(viewportCenter(), correct ? 6 : 3), correct ? 420 : 500);
 
     if (leveledUp) {
+      pendingGrowth.current = grew;
       schedule(() => {
         sfx.levelUp();
         setLevelUp({ ...leveledUp, track });
@@ -626,13 +636,47 @@ export default function App() {
       }, 1500);
       return;
     }
+    if (grew) {
+      schedule(() => showGrowth(grew), 1500);
+      return;
+    }
     schedule(() => startGame(finishedRound.gameId, { fresh: false }), correct ? 1650 : 2100);
   }
 
   function closeLevelUp() {
     sfx.tap();
     setLevelUp(null);
+    if (pendingGrowth.current) {
+      showGrowth(pendingGrowth.current);
+      pendingGrowth.current = null;
+      return;
+    }
     if (activeGame) startGame(activeGame.id, { fresh: false });
+  }
+
+  // The princess grows with every right answer. Returns { from, to } when `amount`
+  // more growth stars take her to the next stage.
+  function growthStep(amount) {
+    const before = profileRef.current.growth;
+    const from = stageOf(before);
+    const to = stageOf(before + amount);
+    return to.id > from.id ? { from, to } : null;
+  }
+
+  function showGrowth(step) {
+    sfx.levelUp();
+    setGrowth(step);
+    setMood({ id: Date.now(), type: "happy" });
+    setMessage(`공주가 자라서 ${josa(step.to.name, "이", "가")} 되었어!`);
+    if (settingsRef.current.praiseVoice) say(lines.growth(step.to.name));
+  }
+
+  function closeGrowth() {
+    sfx.tap();
+    setGrowth(null);
+    updateProfile((current) => ({ ...current, coins: current.coins + GROWTH_COINS }));
+    coinsToWallet(viewportCenter(), 8);
+    if (screen === "game" && activeGame) startGame(activeGame.id, { fresh: false });
   }
 
   function finishTrace() {
@@ -845,9 +889,12 @@ export default function App() {
   // A finished 한글 길 lesson: keep the best star count and pay the reward.
   // 오늘의 복습 is not a step on the path, so it only notes that today's review is done.
   function completeLesson(lesson, stars, reward) {
+    const grew = growthStep(LESSON_STARS);
+    if (grew) schedule(() => showGrowth(grew), 1800);
     updateProfile((current) => ({
       ...current,
       coins: current.coins + reward,
+      growth: current.growth + LESSON_STARS,
       path: lesson.kind === "daily"
         ? current.path
         : { stars: { ...current.path.stars, [lesson.id]: Math.max(current.path.stars[lesson.id] ?? 0, stars) } },
@@ -879,8 +926,11 @@ export default function App() {
 
   // Quiz and dice answers on the board count toward mastery and missions like any game.
   function boardLearn(learnRound, correct, firstTry) {
+    const grew = correct ? growthStep(1) : null;
+    if (grew) schedule(() => showGrowth(grew), 1400);
     updateProfile((current) => ({
       ...current,
+      growth: current.growth + (correct ? 1 : 0),
       mastery: recordResult(current.mastery, itemKey(learnRound), firstTry),
       review: scheduleReview(current.review, reviewKey(learnRound), firstTry, todayKey()),
       history: logPlay(current.history, todayKey(), { track: trackOf(learnRound.gameId), firstTry }),
@@ -1065,6 +1115,8 @@ export default function App() {
 
       {levelUp && <LevelUpOverlay level={levelUp} onClose={closeLevelUp} />}
 
+      {growth && <GrowthOverlay from={growth.from} to={growth.to} items={equippedItems} onClose={closeGrowth} />}
+
       {settingsOpen && (
         <SettingsSheet
           settings={settings}
@@ -1107,6 +1159,7 @@ export default function App() {
           message={message}
           roomItem={roomItem}
           progress={profile.progress}
+          growth={profile.growth}
           mood={mood}
         />
 
@@ -1323,12 +1376,9 @@ const moodKeyframes = {
   ]
 };
 
-function Character({ equippedItems, message, roomItem, progress, mood }) {
+function Character({ equippedItems, message, roomItem, progress, growth, mood }) {
   const bodyRef = useRef(null);
-  const layers = [
-    { id: "base", type: "base", image: "./assets/avatar-base-generated.webp", name: "기본 공주 캐릭터" },
-    ...equippedItems.filter((item) => item.type !== "room")
-  ];
+  const stage = stageOf(growth);
 
   useEffect(() => {
     if (!mood || !bodyRef.current || prefersReducedMotion()) return;
@@ -1343,7 +1393,7 @@ function Character({ equippedItems, message, roomItem, progress, mood }) {
       <div className="speech" aria-live="polite">
         <p key={message}>{message}</p>
       </div>
-      <div className="room-scene">
+      <div className={`room-scene stage-${stage.id}`}>
         <img key={roomItem.id} className="room-art" src={roomItem.image} alt="" aria-hidden="true" />
         <div className="room-sparkles" aria-hidden="true">
           {Array.from({ length: 7 }, (_, index) => (
@@ -1352,22 +1402,13 @@ function Character({ equippedItems, message, roomItem, progress, mood }) {
         </div>
         {mood?.type === "happy" && <span key={mood.id} className="room-burst" aria-hidden="true" />}
         <div className="avatar-floor" aria-hidden="true" />
-        <div className="avatar" aria-label="꾸미기 캐릭터">
+        <div className="avatar" style={{ "--grow": stage.scale }} aria-label={`꾸미기 캐릭터, ${stage.name}`}>
           <div className="avatar-idle">
-            <div className="avatar-body" ref={bodyRef}>
-              {layers.map((item) => (
-                <img
-                  key={item.id}
-                  src={item.avatarImage ?? item.image}
-                  alt=""
-                  className={`avatar-layer layer-${item.type} avatar-item-${item.id}`}
-                  aria-hidden="true"
-                />
-              ))}
-            </div>
+            <PrincessDoll stage={stage} items={equippedItems} bodyRef={bodyRef} />
           </div>
         </div>
       </div>
+      <GrowthChip stars={growth} />
       <div className="mini-stats">
         <span className="stat-chip">
           <FlameIcon />

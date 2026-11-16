@@ -113,6 +113,9 @@ export const say = {
   upgraded: (houseName) => `우와! ${josa(houseName.replace(/2층/g, "이층"), "이", "가")} 되었어요!`,
   quizRight: "정답이에요!",
 
+  // 공주 성장.
+  growth: (name) => `우와! 공주가 자라서 ${josa(name, "이", "가")} 되었어요!`,
+
   // 한글 길.
   pathMeet(letter) {
     const name = letterName(letter);
