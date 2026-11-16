@@ -130,6 +130,10 @@ for (const entry of words) {
   add(entry.word[0]);
 }
 
+// 공주 성장.
+const { princessStages } = await load("/src/princess.js");
+princessStages.slice(1).forEach((stage) => add(say.growth(stage.name)));
+
 // 주사위 마을.
 const lots = tiles.filter((t) => t.type === "lot");
 const names = [...personNames, ...robotNames];
