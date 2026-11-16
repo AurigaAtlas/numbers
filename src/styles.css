@@ -1672,7 +1672,11 @@ h2 {
   animation: object-bob 2.6s ease-in-out calc(var(--i) * -0.3s) infinite;
 }
 
+/* Counted objects share one colour: a number colour would point at its answer card. */
 .count-object.is-counted {
+  --num: var(--ink);
+  --num-deep: #17142e;
+  --num-soft: #ece9f7;
   background: var(--num-soft);
   box-shadow: inset 0 0 0 4px var(--num);
   animation: count-pop 420ms var(--spring);
@@ -8142,6 +8146,365 @@ button.coin-slot:not(:disabled):active {
   .aura-wings,
   .growth-flash,
   .growth-doll {
+    animation: none;
+  }
+}
+
+/* ==========================================================
+   오늘의 공부, 숫자 길
+   ========================================================== */
+.plan-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #fffaf0, #fff0f6);
+  border: 4px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 7px 0 #f3d9c0, 0 18px 30px rgba(46, 42, 79, 0.1);
+}
+
+.plan-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.plan-head strong {
+  font-size: 1.45rem;
+  font-weight: 400;
+}
+
+.plan-head span {
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+}
+
+.plan-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  min-height: 118px;
+  padding: 12px 8px 10px;
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 5px 0 rgba(46, 42, 79, 0.08);
+  text-align: center;
+}
+
+.plan-step:active:not(:disabled) {
+  transform: translateY(3px);
+}
+
+.plan-num {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--ink-soft);
+  background: #f1eff8;
+  font-size: 0.95rem;
+}
+
+.plan-num svg {
+  width: 16px;
+  height: 16px;
+}
+
+.plan-icon {
+  display: grid;
+  place-items: center;
+  min-width: 52px;
+  height: 52px;
+  padding: 0 8px;
+  border-radius: 18px;
+  color: var(--lilac-deep);
+  background: #f1eeff;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.plan-text {
+  display: grid;
+  gap: 2px;
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+
+.plan-text small {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
+.plan-step.is-done {
+  background: #ecfaf3;
+  box-shadow: inset 0 0 0 2px rgba(52, 201, 154, 0.5);
+}
+
+.plan-step.is-done .plan-num {
+  color: #ffffff;
+  background: var(--mint);
+}
+
+.plan-step.is-done .plan-icon {
+  color: var(--mint-deep);
+  background: #d6f4e6;
+}
+
+.plan-step.is-next {
+  background: #ffffff;
+  box-shadow: 0 0 0 4px var(--lilac), 0 7px 0 var(--lilac-deep), 0 16px 26px rgba(118, 85, 230, 0.25);
+  animation: plan-bounce 1.8s ease-in-out infinite;
+}
+
+.plan-step.is-next .plan-num {
+  color: #ffffff;
+  background: var(--lilac);
+}
+
+.plan-step.is-next .plan-icon {
+  color: #ffffff;
+  background: var(--lilac);
+}
+
+.plan-step:disabled {
+  opacity: 0.7;
+}
+
+.plan-go {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #ffffff;
+  background: var(--lilac);
+}
+
+.plan-go svg {
+  width: 14px;
+  height: 14px;
+}
+
+@keyframes plan-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.plan-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.stamp-row {
+  display: flex;
+  gap: 6px;
+}
+
+.stamp {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.stamp i {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px dashed #e4d6c6;
+  background: #ffffff;
+}
+
+.stamp.is-stamped i {
+  border: 0;
+  background: radial-gradient(circle at 35% 30%, #ff9cbc, var(--pink-deep));
+  box-shadow: 0 3px 0 #b8365f;
+  transform: rotate(-12deg);
+  animation: pop-in 520ms var(--spring) backwards;
+}
+
+.stamp.is-stamped i svg {
+  width: 24px;
+  height: 24px;
+  color: #ffffff;
+}
+
+.stamp small {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+
+.stamp.is-today small {
+  color: var(--pink-deep);
+}
+
+.plan-foot .chest-button {
+  flex: none;
+}
+
+.path-banner-numbers {
+  background:
+    radial-gradient(circle at 92% 18%, rgba(255, 255, 255, 0.65), transparent 30%),
+    linear-gradient(120deg, #d9f4ff, #dff7ea 55%, #fff4d6);
+  box-shadow: 0 7px 0 #bfe0ea, 0 18px 30px rgba(46, 42, 79, 0.12);
+}
+
+.path-banner-numbers .banner-copy strong {
+  color: var(--sky-deep);
+}
+
+.path-banner-numbers .path-banner-stones i.is-next {
+  background: var(--sky);
+  box-shadow: 0 5px 0 var(--sky-deep);
+}
+
+.home-section-title {
+  margin: 6px 4px -4px;
+  color: var(--ink-soft);
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+
+.path-stone.kind-compare .stone-face,
+.path-stone.kind-add .stone-face,
+.path-stone.kind-teens .stone-face {
+  font-size: 1.5rem;
+}
+
+.path-stone.kind-compare .stone-face {
+  font-size: 1.15rem;
+}
+
+.meet-letter.meet-number {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--num) 80%, #ffffff), var(--num));
+  box-shadow: 0 9px 0 var(--num-deep), 0 20px 30px rgba(46, 42, 79, 0.18);
+}
+
+/* Five to a row, like a ten frame, centred however many there are. */
+.meet-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 320px;
+}
+
+.meet-dot {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 4px #e3dff2, 0 4px 0 rgba(46, 42, 79, 0.08);
+  color: #ffffff;
+  font-size: 1.4rem;
+  animation: pop-in 420ms var(--spring) calc(var(--i) * 50ms) backwards;
+}
+
+.meet-dot.is-counted {
+  background: var(--num);
+  box-shadow: 0 4px 0 var(--num-deep);
+  animation: count-pop 420ms var(--spring);
+}
+
+.number-chart {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 6px;
+  width: min(640px, 100%);
+}
+
+.number-chart button {
+  min-height: 52px;
+  border-radius: 14px;
+  color: #b5b0cc;
+  background: #f4f2fa;
+  font-size: 1.4rem;
+}
+
+.number-chart button.is-new {
+  color: #ffffff;
+  background: var(--num);
+  box-shadow: 0 4px 0 var(--num-deep);
+  font-size: 1.6rem;
+  animation: pop-in 460ms var(--spring) calc(var(--i) * 40ms) backwards;
+}
+
+@media (max-width: 760px) {
+  .plan-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .plan-panel {
+    padding: 12px;
+  }
+
+  .plan-step {
+    min-height: 100px;
+  }
+
+  .plan-icon {
+    min-width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+  }
+
+  .plan-foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stamp-row {
+    justify-content: space-between;
+  }
+
+  .stamp i {
+    width: 34px;
+    height: 34px;
+  }
+
+  .meet-dots {
+    gap: 8px;
+    max-width: 262px;
+  }
+
+  .meet-dot {
+    width: 46px;
+    height: 46px;
+  }
+
+  .number-chart {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-step.is-next {
     animation: none;
   }
 }

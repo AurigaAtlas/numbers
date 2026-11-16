@@ -130,6 +130,12 @@ for (const entry of words) {
   add(entry.word[0]);
 }
 
+// 숫자 길.
+const { numberLessons } = await load("/src/numberPath.js");
+for (const n of range(1, 10)) add(say.prompt({ gameId: "n-trace", number: n }));
+for (const lesson of numberLessons) if (lesson.kind === "teens") add(say.numberChart(lesson.numbers));
+add(say.numberPathAllDone);
+
 // 공주 성장.
 const { princessStages } = await load("/src/princess.js");
 princessStages.slice(1).forEach((stage) => add(say.growth(stage.name)));

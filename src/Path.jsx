@@ -1,22 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { AddGame, CompareGame, CountGame, FindGame, MissingGame } from "./games";
 import { HangulBlend, HangulBuild, HangulListen, HangulPicture, HangulTrace } from "./hangulGames";
 import { CONSONANTS, blendParts, compose, letterName, letterSound } from "./hangul";
 import { BackIcon, CheckIcon, LockIcon, PlayIcon, SpeakerIcon, StarShape } from "./icons";
 import { dueItems } from "./learning";
-import {
-  buildDaily,
-  buildSteps,
-  dailyLesson,
-  examplesFor,
-  learnedLetters,
-  lessonReward,
-  listenItems,
-  nextLessonIndex,
-  pathLessons,
-  pathUnits,
-  repeatStep,
-  rowSyllables
-} from "./path";
+import { examplesFor, repeatStep, rowSyllables } from "./path";
+import { countingWord, josa, sinoWord, toneClass } from "./rounds";
 import { sfx } from "./sfx";
 import { praise, say as lines } from "./speech";
 
@@ -70,6 +59,79 @@ function Meet({ letter, onSay, onNext }) {
       <div className="meet-syllables">
         {syllables.map((syllable) => (
           <button key={syllable} onClick={() => onSay(syllable)}>{syllable}</button>
+        ))}
+      </div>
+      <button className="chunky-button path-next" onClick={onNext}>
+        다음 <PlayIcon />
+      </button>
+    </div>
+  );
+}
+
+// 숫자 만나기: the numeral, its two names, and dots to count one by one.
+function NumberMeet({ number, onSay, onNext }) {
+  const [counted, setCounted] = useState(0);
+  function countOne() {
+    if (counted >= number) {
+      onSay(lines.dex(number));
+      return;
+    }
+    const next = counted + 1;
+    setCounted(next);
+    sfx.count(Math.min(next, 12));
+    onSay(next === number ? lines.countAll(next) : lines.counting(next), { rate: "fast" });
+  }
+  return (
+    <div className="path-meet">
+      <div className="meet-main">
+        <button className={`meet-letter meet-number ${toneClass(number)}`} onClick={() => onSay(lines.dex(number))} aria-label={`${sinoWord(number)} 듣기`}>
+          {number}
+        </button>
+        <div className="meet-info">
+          <strong>{sinoWord(number)}</strong>
+          <span>{countingWord(number)}</span>
+          <button className="meet-sound" onClick={() => onSay(lines.dex(number))}>
+            <SpeakerIcon />
+            듣기
+          </button>
+        </div>
+      </div>
+      <p className="chart-title">{counted < number ? "점을 눌러서 하나씩 세어봐요" : `모두 ${countingWord(number)}!`}</p>
+      <div className="meet-dots" aria-label={`점 ${number}개`}>
+        {Array.from({ length: number }, (_, index) => (
+          <button
+            key={index}
+            className={`meet-dot ${index < counted ? `is-counted ${toneClass(number)}` : ""}`}
+            style={{ "--i": index }}
+            onClick={countOne}
+            aria-label={index < counted ? `${index + 1}` : "세기"}
+          >
+            {index < counted ? index + 1 : ""}
+          </button>
+        ))}
+      </div>
+      <button className="chunky-button path-next" onClick={onNext}>
+        다음 <PlayIcon />
+      </button>
+    </div>
+  );
+}
+
+// 11–20: the new numbers among all the ones up to 20, each read out when tapped.
+function NumberChart({ numbers, onSay, onNext }) {
+  return (
+    <div className="path-meet">
+      <p className="chart-title">새 숫자를 눌러서 들어봐요</p>
+      <div className="number-chart">
+        {Array.from({ length: 20 }, (_, index) => index + 1).map((n) => (
+          <button
+            key={n}
+            className={numbers.includes(n) ? `is-new ${toneClass(n)}` : ""}
+            style={{ "--i": n }}
+            onClick={() => onSay(lines.dex(n))}
+          >
+            {n}
+          </button>
         ))}
       </div>
       <button className="chunky-button path-next" onClick={onNext}>
@@ -134,7 +196,7 @@ function ListenAlong({ title, items, say, onClose }) {
         else setFinished(true);
       }, 650);
     };
-    const speech = item.letter ? lines.pathMeet(item.letter) : item.text;
+    const speech = item.number ? lines.dex(item.number) : item.letter ? lines.pathMeet(item.letter) : item.text;
     const start = setTimeout(() => say(speech, { onEnd: advance }), 350);
     // If the voice never reports the end, move on after a generous wait.
     waiting = setTimeout(advance, 2500 + speech.length * 320);
@@ -193,7 +255,7 @@ function ListenAlong({ title, items, say, onClose }) {
   );
 }
 
-export function Path({ stars, review, today, reviewedToday, say, setMessage, onBack, onLearn, onComplete }) {
+export function Path({ course, autoDaily, stars, review, today, reviewedToday, say, setMessage, onBack, onLearn, onComplete }) {
   const [lesson, setLesson] = useState(null);
   const [listening, setListening] = useState(null);
   const [steps, setSteps] = useState([]);
@@ -204,13 +266,20 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
   const mistakes = useRef(0); // read by a delayed nextStep, so not state
   const stepsRef = useRef([]); // likewise: a missed question is added while nextStep is waiting
   const currentRef = useRef(null);
-  const learned = learnedLetters(stars, review);
-  const dueCount = dueItems(review, today).length;
+  const { lessons, units, itemWord } = course;
+  const learned = course.learned(stars, review);
+  const prefix = course.id === "numbers" ? "num:" : "ko:";
+  const dueCount = dueItems(review, today).filter((key) => key.startsWith(prefix)).length;
   const context = { learned, review, today };
-  const nextIndex = nextLessonIndex(stars);
-  const doneCount = pathLessons.filter((item) => stars[item.id]).length;
+  const nextIndex = course.next(stars);
+  const doneCount = lessons.filter((item) => stars[item.id]).length;
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  // Opened from 오늘의 공부's review step: go straight into the review.
+  useEffect(() => {
+    if (autoDaily && learned.length >= 2) startLesson(course.daily);
+    // Only when the screen opens.
+  }, []);
   // Bring the lesson to do next into view when the map opens.
   useEffect(() => {
     if (!lesson) currentRef.current?.scrollIntoView({ block: "center" });
@@ -233,7 +302,7 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
   function startLesson(item) {
     clearLater();
     sfx.tap();
-    const made = item.kind === "daily" ? buildDaily(context) : buildSteps(item, context);
+    const made = course.build(item, context);
     setLesson(item);
     stepsRef.current = made;
     setSteps(made);
@@ -252,13 +321,19 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
     } else if (current.type === "chart") {
       setMessage("글자를 눌러서 읽어봐!");
       later(() => say(lines.pathChart(rowSyllables(current.vowel))), 450);
+    } else if (current.type === "numberMeet") {
+      setMessage(`${current.number}! 점을 눌러서 세어봐.`);
+      later(() => say(lines.dex(current.number)), 450);
+    } else if (current.type === "numberChart") {
+      setMessage("새 숫자를 눌러서 들어봐!");
+      later(() => say(lines.numberChart(current.numbers)), 450);
     } else if (current.type === "words") {
       setMessage("낱말을 눌러서 들어봐!");
       later(() => say(lines.pathWords), 450);
     } else {
       setMessage(
         current.type === "trace" ? "회색 글자를 손가락으로 따라 써봐!"
-          : current.warmup ? "먼저 배운 글자를 복습해보자!"
+          : current.warmup ? `먼저 배운 ${itemWord}를 복습해보자!`
             : current.repeat ? "아까 그 문제, 한 번 더 해보자!"
               : "잘 보고, 잘 듣고 골라봐!"
       );
@@ -276,13 +351,14 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
     const earned = mistakes.current === 0 ? 3 : mistakes.current <= 2 ? 2 : 1;
     const daily = lesson.kind === "daily";
     // The daily review pays once a day; doing it again is just for practice.
-    const reward = daily ? (reviewedToday ? 2 : 10) : lessonReward(lesson);
-    const last = !daily && pathLessons.indexOf(lesson) === pathLessons.length - 1;
+    const reward = daily ? (reviewedToday ? 2 : 10) : course.reward(lesson);
+    const last = !daily && lessons.indexOf(lesson) === lessons.length - 1;
     setResult({ stars: earned, reward, last, daily });
     setRound(null);
     sfx.levelUp();
     setMessage(`${lesson.title}, 참 잘했어!`);
-    say(daily ? lines.reviewDone : last ? lines.pathAllDone : lines.pathDone);
+    const allDone = course.id === "numbers" ? lines.numberPathAllDone : lines.pathAllDone;
+    say(daily ? lines.reviewDone : last ? allDone : lines.pathDone);
     onComplete(lesson, earned, reward);
   }
 
@@ -291,12 +367,15 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
     setLesson(null);
     setResult(null);
     setRound(null);
-    setMessage("한글 길을 따라가 보자!");
+    setMessage(`${josa(course.title, "을", "를")} 따라가 보자!`);
   }
 
   // ------------------------------------------------------------ answers
   function giveHint(target, value) {
-    if (target.gameId === "h-listen") say(lines.prompt(target));
+    if (target.gameId === "h-listen" || target.gameId === "find") say(lines.prompt(target));
+    else if (target.gameId === "count") say(lines.countTogether);
+    else if (target.gameId === "missing") say(lines.missingHint(target.sequence[1] - target.sequence[0]));
+    else if (target.gameId === "add") say(lines.addHint);
     else if (target.gameId === "h-picture") say(lines.slowWord(target.entry.word), { rate: "slow" });
     else if (target.gameId === "h-build") say(lines.buildHint(target.consonant, target.vowel), { rate: "slow" });
     else {
@@ -310,10 +389,14 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
     const correct = value === round.answer;
     // A repeated question is there to end on a success: it does not touch stars or records.
     const again = Boolean(stepsRef.current[index].repeat);
-    if (!correct && !round.retried) {
+    // Two-sided questions (more or fewer) have no second try: the other side would be a giveaway.
+    if (!correct && !round.retried && round.options?.length >= 2) {
       const others = round.options.filter((option) => option !== value && option !== round.answer);
       const extra = round.options.length >= 4 && others.length ? [others[0]] : [];
-      setRound({ ...round, retried: true, hint: true, lastWrong: value, eliminated: [value, ...extra] });
+      const retry = { ...round, retried: true, hint: true, lastWrong: value, eliminated: [value, ...extra] };
+      // Counting again: number every object so the child can count along.
+      if (round.gameId === "count") retry.tapped = Array.from({ length: round.count }, (_, i) => i);
+      setRound(retry);
       // The missed question comes back once at the end of the lesson.
       if (!again) {
         mistakes.current += 1;
@@ -336,10 +419,19 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
     } else {
       sfx.wrong();
       if (!again) mistakes.current += 1;
-      setMessage(`정답은 ${round.answer}!`);
-      say(lead + lines.answerIs(round.answer));
+      const shown = round.gameId === "compare" ? round[round.answer] : round.answer;
+      setMessage(`정답은 ${shown}!`);
+      say(lead + lines.answerIs(shown));
     }
     later(nextStep, correct ? (lead ? 2600 : 1700) : 2800);
+  }
+
+  function countTap(at) {
+    if (!round || round.gameId !== "count" || round.feedback || round.tapped.includes(at)) return;
+    const tapped = [...round.tapped, at];
+    setRound({ ...round, tapped });
+    sfx.count(Math.min(tapped.length, 12));
+    say(lines.counting(tapped.length), { rate: "fast" });
   }
 
   function traced() {
@@ -356,9 +448,9 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
   if (lesson) {
     const current = steps[index];
     return (
-      <div className="play-panel path-panel play-pink">
+      <div className={`play-panel path-panel play-${course.theme}`}>
         <div className="play-header">
-          <button className="back-button" onClick={leaveLesson} aria-label="한글 길로">
+          <button className="back-button" onClick={leaveLesson} aria-label={`${course.title}로`}>
             <BackIcon />
             <span>길</span>
           </button>
@@ -386,16 +478,16 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
             <Stars count={result.stars} className="is-big" />
             <h3>{lesson.title} 끝!</h3>
             <p>
-              {result.daily ? "배운 글자를 다시 만났어요. 내일 또 해요!"
-                : result.last ? "한글 길을 끝까지 걸었어요!" : "참 잘했어요! 다음 칸이 열렸어요."}
+              {result.daily ? `배운 ${josa(itemWord, "을", "를")} 다시 만났어요. 내일 또 해요!`
+                : result.last ? `${josa(course.title, "을", "를")} 끝까지 걸었어요!` : "참 잘했어요! 다음 칸이 열렸어요."}
             </p>
             <p className="path-reward">코인 +{result.reward}</p>
             <div className="sheet-buttons">
               {result.daily && (
-                <button className="chunky-button path-next" onClick={() => startLesson(dailyLesson)}>한 번 더</button>
+                <button className="chunky-button path-next" onClick={() => startLesson(course.daily)}>한 번 더</button>
               )}
               {!result.last && !result.daily && (
-                <button className="chunky-button path-next" onClick={() => startLesson(pathLessons[pathLessons.indexOf(lesson) + 1])}>
+                <button className="chunky-button path-next" onClick={() => startLesson(lessons[lessons.indexOf(lesson) + 1])}>
                   다음 칸 <PlayIcon />
                 </button>
               )}
@@ -407,6 +499,8 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
             {current.type === "meet" && <Meet letter={current.letter} onSay={say} onNext={nextStep} />}
             {current.type === "chart" && <Chart vowel={current.vowel} onSay={say} onNext={nextStep} />}
             {current.type === "words" && <WordCards entries={current.entries} onSay={say} onNext={nextStep} />}
+            {current.type === "numberMeet" && <NumberMeet number={current.number} onSay={say} onNext={nextStep} />}
+            {current.type === "numberChart" && <NumberChart numbers={current.numbers} onSay={say} onNext={nextStep} />}
             {current.type === "trace" && round && <HangulTrace round={round} onTraced={traced} />}
             {current.type === "quiz" && round && (
               <>
@@ -416,6 +510,13 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
                 {round.gameId === "h-picture" && <HangulPicture round={round} onAnswer={answer} />}
                 {round.gameId === "h-build" && <HangulBuild round={round} onAnswer={answer} />}
                 {round.gameId === "h-blend" && <HangulBlend round={round} onAnswer={answer} onSay={say} />}
+                {round.gameId === "find" && (
+                  <FindGame round={round} speaking={false} onSpeak={() => say(lines.prompt(round))} onAnswer={answer} />
+                )}
+                {round.gameId === "count" && <CountGame round={round} onCountTap={countTap} onAnswer={answer} />}
+                {round.gameId === "missing" && <MissingGame round={round} onAnswer={answer} />}
+                {round.gameId === "compare" && <CompareGame round={round} onAnswer={answer} />}
+                {round.gameId === "add" && <AddGame round={round} onAnswer={answer} />}
               </>
             )}
           </div>
@@ -425,19 +526,19 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
   }
 
   return (
-    <div className="play-panel path-panel play-pink">
+    <div className={`play-panel path-panel play-${course.theme}`}>
       <div className="play-header">
         <button className="back-button" onClick={onBack} aria-label="처음으로">
           <BackIcon />
           <span>처음</span>
         </button>
         <div className="play-title">
-          <h2>한글 길</h2>
-          <p className="eyebrow">ㄱ부터 차례대로, 한 칸씩 배워요</p>
+          <h2>{course.title}</h2>
+          <p className="eyebrow">{course.subtitle}</p>
         </div>
         <span className="sticker-chip">
           <StarShape />
-          {doneCount} / {pathLessons.length}
+          {doneCount} / {lessons.length}
         </span>
       </div>
 
@@ -447,19 +548,19 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
           <div className="daily-copy">
             <strong>오늘의 복습</strong>
             <small>
-              {learned.length < 2 ? "글자를 두 개 배우면 열려요"
+              {learned.length < 2 ? `${josa(itemWord, "을", "를")} 두 개 배우면 열려요`
                 : reviewedToday ? "오늘 복습 끝! 더 하고 싶으면 또 해도 돼요"
-                  : dueCount > 0 ? `다시 만날 글자 ${Math.min(dueCount, learned.length)}개가 기다려요` : "배운 글자를 짧게 다시 만나요"}
+                  : dueCount > 0 ? `다시 만날 ${itemWord} ${Math.min(dueCount, learned.length)}개가 기다려요` : `배운 ${josa(itemWord, "을", "를")} 짧게 다시 만나요`}
             </small>
           </div>
-          <button className="chunky-button path-next" onClick={() => startLesson(dailyLesson)} disabled={learned.length < 2}>
+          <button className="chunky-button path-next" onClick={() => startLesson(course.daily)} disabled={learned.length < 2}>
             {reviewedToday ? "또 하기" : "복습하기"} <PlayIcon />
           </button>
         </section>
 
-        {pathUnits.map((unit) => {
+        {units.map((unit) => {
           const unitDone = unit.lessons.every((item) => stars[item.id]);
-          const cards = listenItems(unit, stars);
+          const cards = course.listenItems(unit, stars);
           return (
             <section key={unit.id} className={`path-unit ${unitDone ? "is-done" : ""}`}>
               <h3>
@@ -473,7 +574,7 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
               </h3>
               <div className="path-stones">
                 {unit.lessons.map((item) => {
-                  const at = pathLessons.indexOf(item);
+                  const at = lessons.indexOf(item);
                   const earned = stars[item.id] ?? 0;
                   const locked = at > nextIndex;
                   const isNext = at === nextIndex;
@@ -487,9 +588,9 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
                       aria-label={`${item.title}${locked ? " 잠김" : ""}`}
                     >
                       <span className="stone-face">
-                        {locked ? <LockIcon /> : item.kind === "review" || item.kind === "rowReview" ? <StarShape /> : item.label}
+                        {locked ? <LockIcon /> : course.isReview(item) ? <StarShape /> : item.label}
                       </span>
-                      {earned > 0 ? <Stars count={earned} /> : <small>{isNext ? "여기!" : item.kind.includes("eview") ? "복습" : ""}</small>}
+                      {earned > 0 ? <Stars count={earned} /> : <small>{isNext ? "여기!" : course.isReview(item) ? "복습" : ""}</small>}
                     </button>
                   );
                 })}

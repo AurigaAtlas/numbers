@@ -81,7 +81,7 @@ function OptionGrid({ round, onAnswer }) {
   );
 }
 
-function FindGame({ round, speaking, onSpeak, onAnswer }) {
+export function FindGame({ round, speaking, onSpeak, onAnswer }) {
   return (
     <>
       <VoiceStage speaking={speaking} onSpeak={onSpeak} title="잘 듣고 숫자를 찾아요" />
@@ -101,7 +101,7 @@ function ObjectPile({ count, object, className = "", counted, onTap, leaving = 0
         return (
           <Tag
             key={index}
-            className={`count-object ${order ? `is-counted ${toneClass(order)}` : ""} ${isLeaving ? "is-leaving" : ""}`}
+            className={`count-object ${order ? "is-counted" : ""} ${isLeaving ? "is-leaving" : ""}`}
             style={{ "--i": index, "--tilt": `${((index * 37) % 13) - 6}deg` }}
             onClick={onTap ? () => onTap(index) : undefined}
             aria-label={onTap ? (order ? `${order}번째` : `${object.name} 세기`) : undefined}
@@ -206,7 +206,7 @@ function MemoryGame({ round, onMemory }) {
   );
 }
 
-function CompareGame({ round, onAnswer }) {
+export function CompareGame({ round, onAnswer }) {
   const question = round.showNumerals
     ? round.ask === "more" ? "더 큰 숫자는?" : "더 작은 숫자는?"
     : round.ask === "more" ? "더 많은 쪽은?" : "더 적은 쪽은?";
@@ -241,7 +241,7 @@ function CompareGame({ round, onAnswer }) {
   );
 }
 
-function MissingGame({ round, onAnswer }) {
+export function MissingGame({ round, onAnswer }) {
   const filled = round.feedback?.correct;
   return (
     <>

@@ -19,6 +19,8 @@ export function itemKey(round) {
     case "h-trace":
     case "h-balloon":
       return `ko:${round.target}`;
+    case "n-trace":
+      return `num:${round.number}`;
     default:
       return null;
   }
@@ -55,104 +57,60 @@ export function pickWeighted(pool, keyOf, mastery = {}) {
   return pool[pool.length - 1];
 }
 
-// ---------------------------------------------------------------- missions
+// ---------------------------------------------------------------- 오늘의 공부
 
-const missionPool = {
-  numbers: [
-    { type: "numbersCorrect", target: 5, text: "숫자 놀이 5번 맞히기", icon: "🔢" },
-    { type: "count", target: 3, text: "몇 개일까 3번 맞히기", icon: "🍎" },
-    { type: "balloon", target: 1, text: "풍선 터뜨리기 1판", icon: "🎈" },
-    { type: "add", target: 2, text: "더하기 빼기 2번 맞히기", icon: "➕" }
-  ],
-  hangul: [
-    { type: "hangulCorrect", target: 5, text: "한글 놀이 5번 맞히기", icon: "가" },
-    { type: "trace", target: 2, text: "따라 쓰기 2번 하기", icon: "✏️" },
-    { type: "build", target: 3, text: "글자 만들기 3번 맞히기", icon: "🧩" },
-    { type: "picture", target: 3, text: "그림 글자 3번 맞히기", icon: "🖼️" },
-    { type: "blend", target: 3, text: "소리 합치기 3번 맞히기", icon: "🔊" }
-  ],
-  fun: [
-    { type: "streak", target: 3, text: "3번 연속 맞히기", icon: "🔥" },
-    { type: "dex", target: 3, text: "도감에서 3개 들어보기", icon: "📖" },
-    { type: "streak", target: 5, text: "5번 연속 맞히기", icon: "🔥" },
-    { type: "board", target: 3, text: "주사위 마을 3번 굴리기", icon: "🎲" },
-    { type: "path", target: 1, text: "한글 길 한 칸 가기", icon: "🛤️" }
-  ]
-};
+// The same short plan every day, in this order: a step on each path, a review,
+// then some free play. Finishing it opens the treasure chest and stamps the day.
+const PLAN_VERSION = 2;
+const planSteps = [
+  { type: "hangulPath", target: 1, text: "한글 길 한 칸", icon: "가" },
+  { type: "numberPath", target: 1, text: "숫자 길 한 칸", icon: "123" },
+  { type: "review", target: 1, text: "오늘의 복습", icon: "★" },
+  { type: "play", target: 3, text: "놀이에서 3번 맞히기", icon: "🎲" }
+];
 
 export const MISSION_REWARD = 30;
-
-function hashDay(day) {
-  let hash = 0;
-  for (const char of day) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return hash;
-}
+export const PLAN_GROWTH = 5; // growth stars from the chest
 
 export function ensureDaily(daily, day) {
-  if (daily?.date === day) return daily;
-  const seed = hashDay(day);
-  const pickFrom = (list, salt) => list[(seed >>> salt) % list.length];
-  const missions = [pickFrom(missionPool.numbers, 0), pickFrom(missionPool.hangul, 4), pickFrom(missionPool.fun, 8)]
-    .map((mission) => ({ ...mission, progress: 0 }));
-  return { date: day, missions, claimed: false };
+  if (daily?.date === day && daily.version === PLAN_VERSION) return daily;
+  return {
+    version: PLAN_VERSION,
+    date: day,
+    missions: planSteps.map((step) => ({ ...step, progress: 0 })),
+    // A chest already opened today stays opened when the plan format changes.
+    claimed: daily?.date === day ? Boolean(daily.claimed) : false
+  };
 }
 
-// Advances missions for one event: { gameId, track, correct, streak } or { dex: true }.
+// Advances the plan for one event: { pathLesson: "hangul" | "numbers" }, { review: true },
+// a free-play answer { gameId, correct }, or { boardRoll: true }.
 export function applyMissionEvent(daily, event) {
   const missions = daily.missions.map((mission) => {
     if (mission.progress >= mission.target) return mission;
     let progress = mission.progress;
-    const correct = event.correct;
-    switch (mission.type) {
-      case "numbersCorrect":
-        if (correct && event.track === "numbers") progress += 1;
-        break;
-      case "hangulCorrect":
-        if (correct && event.track === "hangul") progress += 1;
-        break;
-      case "count":
-        if (correct && event.gameId === "count") progress += 1;
-        break;
-      case "balloon":
-        if (correct && event.gameId === "balloon") progress += 1;
-        break;
-      case "add":
-        if (correct && event.gameId === "add") progress += 1;
-        break;
-      case "trace":
-        if (correct && event.gameId === "h-trace") progress += 1;
-        break;
-      case "build":
-        if (correct && event.gameId === "h-build") progress += 1;
-        break;
-      case "picture":
-        if (correct && event.gameId === "h-picture") progress += 1;
-        break;
-      case "blend":
-        if (correct && event.gameId === "h-blend") progress += 1;
-        break;
-      case "streak":
-        if (event.streak !== undefined) progress = Math.max(progress, event.streak);
-        break;
-      case "dex":
-        if (event.dex) progress += 1;
-        break;
-      case "board":
-        if (event.boardRoll) progress += 1;
-        break;
-      case "path":
-        if (event.pathLesson) progress += 1;
-        break;
-      default:
-        break;
-    }
+    if (mission.type === "hangulPath" && event.pathLesson === "hangul") progress += 1;
+    if (mission.type === "numberPath" && event.pathLesson === "numbers") progress += 1;
+    if (mission.type === "review" && event.review) progress += 1;
+    if (mission.type === "play" && ((event.correct && event.gameId) || event.boardRoll)) progress += 1;
     return { ...mission, progress: Math.min(progress, mission.target) };
   });
   return { ...daily, missions };
 }
 
-export function missionsDone(daily) {
-  return daily.missions.every((mission) => mission.progress >= mission.target);
+// Before two letters or numbers are learned there is nothing to review, so that step
+// does not hold the chest back.
+export function stepDone(mission, reviewReady = true) {
+  return mission.progress >= mission.target || (mission.type === "review" && !reviewReady);
+}
+
+export function missionsDone(daily, reviewReady = true) {
+  return daily.missions.every((mission) => stepDone(mission, reviewReady));
+}
+
+// Days the plan was finished, newest kept, for the stamp card.
+export function addStamp(stamps = [], day) {
+  return stamps.includes(day) ? stamps : [...stamps, day].sort().slice(-60);
 }
 
 // ---------------------------------------------------------------- play log

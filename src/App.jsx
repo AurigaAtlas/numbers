@@ -24,14 +24,27 @@ import {
 } from "./icons";
 import { bump, centerOf, flyCoins, prefersReducedMotion, viewportCenter } from "./motion";
 import { blendParts, hangulLevels, makeHangulRound, spokenForm } from "./hangul";
-import { MISSION_REWARD, applyMissionEvent, dayKey, dueItems, ensureDaily, itemKey, logPlay, missionsDone, recordResult, scheduleReview } from "./learning";
-import { MissionPanel } from "./Missions";
+import {
+  MISSION_REWARD,
+  PLAN_GROWTH,
+  addStamp,
+  applyMissionEvent,
+  dayKey,
+  dueItems,
+  ensureDaily,
+  itemKey,
+  logPlay,
+  missionsDone,
+  recordResult,
+  scheduleReview
+} from "./learning";
+import { TodayPlan } from "./Missions";
 import { LevelUpOverlay, SettingsSheet } from "./overlays";
 import { BreakOverlay, ParentGate, ReportSheet } from "./parent";
 import { Path } from "./Path";
 import { GrowthChip, GrowthOverlay, PrincessDoll } from "./Princess";
 import { GROWTH_COINS, LESSON_STARS, stageOf } from "./princess";
-import { nextLessonIndex, pathLessons } from "./path";
+import { courses, reviewReady as courseReviewReady } from "./courses";
 import { countingWord, josa, makeRound, numberJosa } from "./rounds";
 import { sfx } from "./sfx";
 import { say as lines } from "./speech";
@@ -76,7 +89,8 @@ const defaultState = {
   history: {},
   path: { stars: {} },
   review: {},
-  reviewDay: null,
+  reviewDays: {},
+  stamps: [],
   growth: 0
 };
 
@@ -109,10 +123,15 @@ const tracks = {
   }
 };
 
-// Single letters (ㄱ, ㅏ) are the items that come back in 오늘의 복습.
+// Single letters (ㄱ, ㅏ) and numbers are the items that come back in 오늘의 복습.
 function reviewKey(round) {
   const key = itemKey(round);
-  return key && /^ko:[ㄱ-ㅎㅏ-ㅣ]$/.test(key) ? key : null;
+  return key && /^(ko:[ㄱ-ㅎㅏ-ㅣ]|num:\d+)$/.test(key) ? key : null;
+}
+
+// Whether either path has something to review yet (오늘의 공부 skips that step until then).
+function anyReviewReady(profile) {
+  return Object.values(courses).some((course) => courseReviewReady(course, profile.path.stars, profile.review));
 }
 
 function trackOf(gameId) {
@@ -179,6 +198,9 @@ function normalizeState(rawState) {
     history: rawState?.history ?? {},
     path: { stars: rawState?.path?.stars ?? {} },
     review: rawState?.review ?? {},
+    // reviewDay (one date, for 한글 길) became one date per path.
+    reviewDays: rawState?.reviewDays ?? (rawState?.reviewDay ? { hangul: rawState.reviewDay } : {}),
+    stamps: rawState?.stamps ?? [],
     // Growth stars start from the answers already given, so a returning child keeps her progress.
     growth: Number.isFinite(rawState?.growth) ? rawState.growth : rawState?.progress?.correctAnswers ?? 0
   };
@@ -296,6 +318,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [levelUp, setLevelUp] = useState(null);
   const [growth, setGrowth] = useState(null);
+  const [path, setPath] = useState({ course: "hangul", daily: false, key: 0 });
   const [subject, setSubject] = useState(loadSubject);
   const [voicePack, setVoicePack] = useState(null);
   const [gate, setGate] = useState(null);
@@ -609,8 +632,9 @@ export default function App() {
       correct,
       streak
     });
-    if (missionsDone(daily) && !missionsDone(ensureDaily(latestProfile.daily, todayKey())) && !daily.claimed) {
-      schedule(() => showToast("오늘의 미션 완료! 보물상자를 열어봐", "success"), 1200);
+    const ready = anyReviewReady(latestProfile);
+    if (missionsDone(daily, ready) && !missionsDone(ensureDaily(latestProfile.daily, todayKey()), ready) && !daily.claimed) {
+      schedule(() => showToast("오늘의 공부 끝! 보물상자를 열어봐", "success"), 1200);
     }
     const mastery = recordResult(latestProfile.mastery, itemKey(finishedRound), firstTry);
     const grew = correct ? growthStep(1) : null;
@@ -879,27 +903,61 @@ export default function App() {
     setMessage(`펑! ${round.goal - popped.length}개 더 찾아봐.`);
   }
 
-  function openPath() {
+  function openPath(courseId, { daily = false } = {}) {
     sfx.tap();
     clearTimers();
+    setPath({ course: courseId, daily, key: Date.now() });
     setScreen("path");
-    setMessage("한글 길을 따라가 보자!");
+    setMessage(`${josa(courses[courseId].title, "을", "를")} 따라가 보자!`);
   }
 
-  // A finished 한글 길 lesson: keep the best star count and pay the reward.
+  // 오늘의 공부 buttons: each step opens the place where it is done.
+  function goToPlanStep(type) {
+    if (type === "hangulPath") openPath("hangul");
+    else if (type === "numberPath") openPath("numbers");
+    else if (type === "review") {
+      const { stars } = profile.path;
+      const today = todayKey();
+      const ready = (id) => courseReviewReady(courses[id], stars, profile.review);
+      const first = ["hangul", "numbers"].find((id) => ready(id) && profile.reviewDays[id] !== today)
+        ?? ["hangul", "numbers"].find(ready) ?? "hangul";
+      openPath(first, { daily: true });
+    } else {
+      // Free play: one of today's subject's games, chosen at random.
+      const games = tracks[subject].games;
+      startGame(games[Math.floor(Math.random() * games.length)].id);
+    }
+  }
+
+  // Answers inside a path lesson teach and grow the princess, but are not free play.
+  function pathLearn(learnRound, correct, firstTry) {
+    const grew = correct ? growthStep(1) : null;
+    if (grew) schedule(() => showGrowth(grew), 1400);
+    updateProfile((current) => ({
+      ...current,
+      growth: current.growth + (correct ? 1 : 0),
+      mastery: recordResult(current.mastery, itemKey(learnRound), firstTry),
+      review: scheduleReview(current.review, reviewKey(learnRound), firstTry, todayKey()),
+      history: logPlay(current.history, todayKey(), { track: learnRound.gameId.startsWith("h-") ? "hangul" : "numbers", firstTry })
+    }));
+    if (correct) setMood({ id: Date.now(), type: "happy" });
+  }
+
+  // A finished path lesson: keep the best star count and pay the reward.
   // 오늘의 복습 is not a step on the path, so it only notes that today's review is done.
-  function completeLesson(lesson, stars, reward) {
+  function completeLesson(courseId, lesson, stars, reward) {
     const grew = growthStep(LESSON_STARS);
     if (grew) schedule(() => showGrowth(grew), 1800);
+    const daily = lesson.kind === "daily";
     updateProfile((current) => ({
       ...current,
       coins: current.coins + reward,
       growth: current.growth + LESSON_STARS,
-      path: lesson.kind === "daily"
+      path: daily
         ? current.path
         : { stars: { ...current.path.stars, [lesson.id]: Math.max(current.path.stars[lesson.id] ?? 0, stars) } },
-      reviewDay: lesson.kind === "daily" ? todayKey() : current.reviewDay,
-      daily: applyMissionEvent(ensureDaily(current.daily, todayKey()), { pathLesson: true })
+      reviewDays: daily ? { ...current.reviewDays, [courseId]: todayKey() } : current.reviewDays,
+      daily: applyMissionEvent(ensureDaily(current.daily, todayKey()), daily ? { review: true } : { pathLesson: courseId })
     }));
     triggerCelebration(reward, "참 잘했어요!");
     setMood({ id: Date.now(), type: "happy" });
@@ -967,20 +1025,25 @@ export default function App() {
     }));
   }
 
+  // The chest at the end of 오늘의 공부: coins, a stamp for today and a growth boost.
   function claimMissions(element) {
     const daily = ensureDaily(profile.daily, todayKey());
-    if (!missionsDone(daily) || daily.claimed) return;
+    if (!missionsDone(daily, anyReviewReady(profile)) || daily.claimed) return;
+    const grew = growthStep(PLAN_GROWTH);
     updateProfile((current) => ({
       ...current,
       coins: current.coins + MISSION_REWARD,
+      growth: current.growth + PLAN_GROWTH,
+      stamps: addStamp(current.stamps, todayKey()),
       daily: { ...ensureDaily(current.daily, todayKey()), claimed: true }
     }));
     sfx.levelUp();
     triggerCelebration(MISSION_REWARD, "보물상자!");
     setMood({ id: Date.now(), type: "happy" });
     coinsToWallet(centerOf(element), 10);
-    setMessage(`오늘의 미션을 다 했어! 코인 ${MISSION_REWARD}개!`);
+    setMessage(`오늘의 공부를 다 했어! 도장 쾅! 코인 ${MISSION_REWARD}개!`);
     if (settingsRef.current.praiseVoice) say(lines.missionDone);
+    if (grew) schedule(() => showGrowth(grew), 1900);
   }
 
   function buyOrEquip(item, element) {
@@ -1176,6 +1239,7 @@ export default function App() {
               onDex={openDex}
               onBoard={openBoard}
               onPath={openPath}
+              onPlanStep={goToPlanStep}
               onClaimMissions={claimMissions}
             />
           )}
@@ -1217,15 +1281,18 @@ export default function App() {
 
           {screen === "path" && (
             <Path
+              key={path.key}
+              course={courses[path.course]}
+              autoDaily={path.daily}
               stars={profile.path.stars}
               review={profile.review}
               today={todayKey()}
-              reviewedToday={profile.reviewDay === todayKey()}
+              reviewedToday={profile.reviewDays[path.course] === todayKey()}
               say={say}
               setMessage={setMessage}
               onBack={goHome}
-              onLearn={boardLearn}
-              onComplete={completeLesson}
+              onLearn={pathLearn}
+              onComplete={(lesson, stars, reward) => completeLesson(path.course, lesson, stars, reward)}
             />
           )}
 
@@ -1423,7 +1490,7 @@ function Character({ equippedItems, message, roomItem, progress, growth, mood })
   );
 }
 
-function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLevel, onDex, onBoard, onPath, onClaimMissions }) {
+function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLevel, onDex, onBoard, onPath, onPlanStep, onClaimMissions }) {
   const track = tracks[subject];
   const { level: unlocked, playLevel, levelStars } = trackState(profile.progress, subject);
   const trackLevels = track.levels;
@@ -1481,27 +1548,38 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
         </div>
       </section>
 
-      {subject === "hangul" && (() => {
-        const stars = profile.path.stars;
-        const at = nextLessonIndex(stars);
-        const next = pathLessons[at];
-        const due = dueItems(profile.review, todayKey()).length;
+      <TodayPlan
+        daily={ensureDaily(profile.daily, todayKey())}
+        reviewReady={anyReviewReady(profile)}
+        stamps={profile.stamps}
+        today={todayKey()}
+        onGo={onPlanStep}
+        onClaim={onClaimMissions}
+      />
+
+      {(() => {
+        // The path for the subject on screen: where the child is and what comes next.
+        const course = courses[subject];
+        const { stars } = profile.path;
+        const at = course.next(stars);
+        const next = course.lessons[at];
+        const prefix = subject === "numbers" ? "num:" : "ko:";
+        const due = dueItems(profile.review, todayKey()).filter((key) => key.startsWith(prefix)).length;
+        const stone = (lesson) => (lesson ? (course.isReview(lesson) ? "★" : lesson.label.slice(0, 2)) : "");
         return (
-          <button className="path-banner enter" style={{ "--i": 2 }} onClick={onPath}>
+          <button className={`path-banner path-banner-${subject} enter`} style={{ "--i": 2 }} onClick={() => onPath(subject)}>
             <span className="path-banner-stones" aria-hidden="true">
               {[at - 1, at, at + 1].map((n) => (
-                <i key={n} className={n < at ? "is-done" : n === at ? "is-next" : ""}>
-                  {pathLessons[n] ? (pathLessons[n].kind.includes("eview") ? "★" : pathLessons[n].label[0]) : ""}
-                </i>
+                <i key={n} className={n < at ? "is-done" : n === at ? "is-next" : ""}>{stone(course.lessons[n])}</i>
               ))}
             </span>
             <span className="banner-copy">
-              <strong>한글 길</strong>
+              <strong>{course.title}</strong>
               <small>
                 {next
-                  ? `ㄱ부터 차례대로 배워요 · 다음: ${next.title} (${at}/${pathLessons.length})`
+                  ? `${course.subtitle.split(",")[0]} · 다음: ${next.title} (${at}/${course.lessons.length})`
                   : "끝까지 다 걸었어요! 다시 해볼 수 있어요"}
-                {due > 0 && profile.reviewDay !== todayKey() && <b className="banner-due">오늘 복습 {due}개</b>}
+                {due > 0 && profile.reviewDays[subject] !== todayKey() && <b className="banner-due">오늘 복습 {due}개</b>}
               </small>
             </span>
             <span className="play-dot"><PlayIcon /></span>
@@ -1509,8 +1587,31 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
         );
       })()}
 
-      <MissionPanel daily={ensureDaily(profile.daily, todayKey())} onClaim={onClaimMissions} />
-
+      <h2 className="home-section-title enter" style={{ "--i": 3 }}>자유 놀이</h2>
+      <section className={`game-grid games-${track.games.length}`} aria-label="게임 목록" key={`games-${subject}`}>
+        {track.games.map((game, index) => {
+          return (
+            <button
+              key={game.id}
+              className={`game-card ${game.color} enter`}
+              style={{ "--i": index + 4 }}
+              onClick={() => onStart(game.id)}
+            >
+              <span className="game-art">
+                <img src={game.image} alt="" aria-hidden="true" />
+              </span>
+              <span className="game-copy">
+                <strong>{game.title}</strong>
+                <small>{game.subtitle}</small>
+              </span>
+              <span className="game-meta">
+                <span className="reward-chip"><CoinIcon />+{game.reward + (current.id - 1) * 2}</span>
+                <span className="play-dot"><PlayIcon /></span>
+              </span>
+            </button>
+          );
+        })}
+      </section>
       <button className="board-banner enter" style={{ "--i": 3 }} onClick={onBoard}>
         <img className="banner-illustration" src="./assets/game-dice-village-storybook-v2.webp" alt="" aria-hidden="true" />
         <span className="banner-copy">
@@ -1524,7 +1625,7 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
         <span className="play-dot"><PlayIcon /></span>
       </button>
 
-      <section className="level-panel enter" style={{ "--i": 3 }} aria-label="단계" key={`level-${subject}`}>
+      <section className="level-panel enter" style={{ "--i": 3 }} aria-label="놀이 단계" key={`level-${subject}`}>
         <div className="level-progress">
           <div className="level-progress-head">
             <strong>
@@ -1567,30 +1668,6 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
         </div>
       </section>
 
-      <section className={`game-grid games-${track.games.length}`} aria-label="게임 목록" key={`games-${subject}`}>
-        {track.games.map((game, index) => {
-          return (
-            <button
-              key={game.id}
-              className={`game-card ${game.color} enter`}
-              style={{ "--i": index + 4 }}
-              onClick={() => onStart(game.id)}
-            >
-              <span className="game-art">
-                <img src={game.image} alt="" aria-hidden="true" />
-              </span>
-              <span className="game-copy">
-                <strong>{game.title}</strong>
-                <small>{game.subtitle}</small>
-              </span>
-              <span className="game-meta">
-                <span className="reward-chip"><CoinIcon />+{game.reward + (current.id - 1) * 2}</span>
-                <span className="play-dot"><PlayIcon /></span>
-              </span>
-            </button>
-          );
-        })}
-      </section>
     </div>
   );
 }

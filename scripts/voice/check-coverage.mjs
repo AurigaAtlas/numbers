@@ -34,6 +34,19 @@ function roundLines(r, where) {
 let rounds = 0;
 for (const level of levels) for (const game of gameCards) for (let i = 0; i < 400; i++) { roundLines(makeRound(game.id, level), `${game.id} L${level.id}`); rounds++; }
 for (const level of hangulLevels) for (const game of hangulGameCards) for (let i = 0; i < 400; i++) { roundLines(makeHangulRound(game.id, level), `${game.id} L${level.id}`); rounds++; }
+const { numberLessons, buildNumberSteps, buildNumberDaily } = await load("/src/numberPath.js");
+const numberContext = { learned: Array.from({ length: 20 }, (_, i) => i + 1), review: {}, today: "2026-01-01" };
+for (const lesson of numberLessons) for (let i = 0; i < 40; i++) for (const step of buildNumberSteps(lesson, numberContext)) {
+  if (step.round) {
+    roundLines(step.round, `number path ${lesson.id}`);
+    if (step.round.gameId === "compare") check(say.answerIs(step.round[step.round.answer]), `number path ${lesson.id}`);
+    rounds++;
+  }
+  if (step.type === "numberMeet") { check(say.dex(step.number), "meet"); for (let n = 1; n <= step.number; n++) { check(say.counting(n), "meet"); check(say.countAll(n), "meet"); } }
+  if (step.type === "numberChart") { check(say.numberChart(step.numbers), "chart"); step.numbers.forEach((n) => check(say.dex(n), "chart")); }
+}
+for (let i = 0; i < 200; i++) for (const step of buildNumberDaily(numberContext)) { roundLines(step.round, "number daily"); rounds++; }
+check(say.numberPathAllDone, "fixed");
 for (const lesson of pathLessons) for (let i = 0; i < 40; i++) for (const step of buildSteps(lesson)) {
   if (step.round) { roundLines(step.round, `path ${lesson.id}`); rounds++; }
   if (step.type === "meet") check(say.pathMeet(step.letter), `path ${lesson.id}`);

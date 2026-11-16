@@ -36,7 +36,8 @@ const numberPrompt = {
   },
   missing: () => "빈칸에 들어갈 숫자는 뭘까요?",
   add: (round) => `${sinoWord(round.a)} ${round.op === "+" ? "더하기" : "빼기"} ${josa(sinoWord(round.b), "은", "는")} 얼마일까요?`,
-  balloon: (round) => `${sinoWord(round.target)} 풍선을 터뜨려주세요.`
+  balloon: (round) => `${sinoWord(round.target)} 풍선을 터뜨려주세요.`,
+  "n-trace": (round) => `${sinoWord(round.number)}. 손가락으로 따라 써볼까요?`
 };
 
 export const say = {
@@ -54,7 +55,7 @@ export const say = {
   answerIs: (answer) => `정답은 ${josa(spokenAnswer(answer), "이야", "야")}`,
   tryAgain: "괜찮아, 다시 해보자!",
   levelUp: (name) => `레벨 업! ${name} 단계가 열렸어요!`,
-  missionDone: "미션 성공! 보물상자를 열었어요!",
+  missionDone: "오늘의 공부 끝! 보물상자를 열었어요!",
   preview: "안녕! 같이 숫자 놀이 하자. 일, 이, 삼!",
   breakTime: "우와, 많이 놀았다! 눈도 쉬고 물도 한 잔 마셔요.",
   breakOver: "다 쉬었어요! 다시 놀아볼까요?",
@@ -128,7 +129,9 @@ export const say = {
   pathWords: "낱말을 눌러서 들어봐요.",
   pathDone: "참 잘했어요! 별을 받았어요!",
   reviewDone: "오늘의 복습 끝! 내일 또 만나요.",
-  pathAllDone: "우와! 한글 길을 끝까지 걸었어요!"
+  pathAllDone: "우와! 한글 길을 끝까지 걸었어요!",
+  numberPathAllDone: "우와! 숫자 길을 끝까지 걸었어요!",
+  numberChart: (numbers) => `${numbers.map(sinoWord).join(", ")}.`
 };
 
 // Sentences are recorded and played back piece by piece, split after . ! ? and ,
