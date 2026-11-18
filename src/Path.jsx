@@ -193,7 +193,7 @@ function ListenAlong({ title, items, say, onClose }) {
   );
 }
 
-export function Path({ stars, review, today, reviewedToday, say, setMessage, onBack, onLearn, onComplete }) {
+export function Path({ initialLesson, stars, review, today, reviewedToday, say, setMessage, onBack, onLearn, onComplete }) {
   const [lesson, setLesson] = useState(null);
   const [listening, setListening] = useState(null);
   const [steps, setSteps] = useState([]);
@@ -215,6 +215,11 @@ export function Path({ stars, review, today, reviewedToday, say, setMessage, onB
   useEffect(() => {
     if (!lesson) currentRef.current?.scrollIntoView({ block: "center" });
   }, [lesson]);
+
+  // An entry chosen on the home screen goes straight to that lesson.
+  useEffect(() => {
+    if (initialLesson) startLesson(initialLesson);
+  }, [initialLesson]);
 
   function later(callback, ms) {
     const id = setTimeout(() => {

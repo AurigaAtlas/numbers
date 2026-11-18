@@ -31,8 +31,8 @@ import { BreakOverlay, ParentGate, ReportSheet } from "./parent";
 import { Path } from "./Path";
 import { GrowthChip, GrowthOverlay, PrincessDoll } from "./Princess";
 import { GROWTH_COINS, LESSON_STARS, stageOf } from "./princess";
-import { nextLessonIndex, pathLessons } from "./path";
-import { countingWord, josa, makeRound, numberJosa } from "./rounds";
+import { dailyLesson, learnedLetters, nextLessonIndex, pathLessons } from "./path";
+import { countingWord, josa, makePicnicRound, makeRound, nativeCount, numberJosa, picnicStops } from "./rounds";
 import { sfx } from "./sfx";
 import { say as lines } from "./speech";
 import { installSoundUnlock, prepareSpeech, speak, stopSpeaking } from "./voice";
@@ -96,14 +96,12 @@ const tracks = {
   numbers: {
     label: "숫자 놀이",
     levels,
-    games: gameCards,
     keys: { level: "level", play: "playLevel", stars: "levelStars" },
     rangeText: (level) => `1부터 ${level.max}까지`
   },
   hangul: {
     label: "한글 놀이",
     levels: hangulLevels,
-    games: hangulGameCards,
     keys: { level: "hangulLevel", play: "hangulPlayLevel", stars: "hangulStars" },
     rangeText: (level) => level.perk
   }
@@ -288,7 +286,7 @@ export default function App() {
   const [round, setRound] = useState(null);
   const [shopCategory, setShopCategory] = useState("all");
   const [celebration, setCelebration] = useState(null);
-  const [message, setMessage] = useState("오늘도 숫자랑 같이 놀아볼까?");
+  const [message, setMessage] = useState("오늘은 어떤 놀이를 해볼까?");
   const [toast, setToast] = useState(null);
   const [mood, setMood] = useState(null);
   const [speaking, setSpeaking] = useState(false);
@@ -296,6 +294,8 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [levelUp, setLevelUp] = useState(null);
   const [growth, setGrowth] = useState(null);
+  const [shelves, setShelves] = useState({ numbers: 0, hangul: 0 });
+  const [pathEntry, setPathEntry] = useState(null);
   const [subject, setSubject] = useState(loadSubject);
   const [voicePack, setVoicePack] = useState(null);
   const [gate, setGate] = useState(null);
@@ -312,8 +312,14 @@ export default function App() {
   const shownCoins = useCountUp(profile.coins);
   const gatePassedAt = useRef(0);
   const pendingGrowth = useRef(null); // shown after a level-up overlay closes
+  const rewardPending = useRef(false);
+  rewardPending.current = Boolean((screen === "game" && round?.feedback) || growth || levelUp);
   const onBreakRef = useRef(onBreak);
   onBreakRef.current = onBreak;
+
+  useEffect(() => {
+    if (screen !== "path" || pathEntry) window.scrollTo(0, 0);
+  }, [screen, pathEntry]);
 
   useEffect(() => {
     sfx.setEnabled(settings.sound);
@@ -356,7 +362,7 @@ export default function App() {
       clock.session += PLAY_TICK_MS / 1000;
       updateProfile((current) => ({ ...current, history: logPlay(current.history, todayKey(), { seconds: PLAY_TICK_MS / 1000 }) }));
       const limit = settingsRef.current.breakMinutes * 60;
-      if (limit && clock.session >= limit) startBreak();
+      if (limit && clock.session >= limit && !rewardPending.current) startBreak();
     }, PLAY_TICK_MS);
     return () => {
       window.removeEventListener("pointerdown", touch);
@@ -455,6 +461,10 @@ export default function App() {
     playClock.current.session = 0;
     playClock.current.lastTouch = Date.now();
     setOnBreak(false);
+    if (screen === "game" && round?.picnicStep != null) {
+      speakPrompt(round);
+      return;
+    }
     // Pick the game back up with a fresh question; the old one's timers were cleared.
     if (screen === "game" && activeGame) startGame(activeGame.id, { fresh: false });
   }
@@ -499,25 +509,50 @@ export default function App() {
   }
 
   function startGame(gameId, { fresh = true } = {}) {
-    clearTimers();
-    const game = allGames.find((card) => card.id === gameId);
     const track = trackOf(gameId);
     const level = tracks[track].levels[trackState(profileRef.current.progress, track).playLevel - 1];
     const mastery = profileRef.current.mastery;
     const nextRound = track === "hangul" ? makeHangulRound(gameId, level, mastery) : makeRound(gameId, level, mastery);
+    showGame(nextRound, fresh);
+  }
+
+  function startPicnic() {
+    const { progress, mastery } = profileRef.current;
+    showGame(makePicnicRound(0, levels[progress.playLevel - 1], mastery), true);
+  }
+
+  function showGame(nextRound, fresh) {
+    clearTimers();
+    setSpeaking(false);
+    const game = allGames.find((card) => card.id === nextRound.gameId);
     setActiveGame(game);
     setRound(nextRound);
     setScreen("game");
     setCelebration(null);
-    if (fresh) {
-      sfx.tap();
-      setMessage(game.intro);
-    }
+    if (fresh) sfx.tap();
+    if (fresh || nextRound.picnicStep != null) setMessage(game.intro);
     if (promptFor(nextRound)) {
       const answer = answerFeedback(nextRound);
       prepareSpeech([promptFor(nextRound), answer ? lines.answerIs(answer.value) : null].filter(Boolean));
       schedule(() => speakPrompt(nextRound), fresh ? 650 : 450);
     }
+  }
+
+  function continueGame(finished) {
+    if (finished.picnicStep == null) {
+      startGame(finished.gameId, { fresh: false });
+      return;
+    }
+    const next = finished.picnicStep + 1;
+    if (next === picnicStops.length) {
+      setCelebration(null);
+      setScreen("picnic-done");
+      setMessage("토끼와 소풍을 다녀왔어!");
+      if (settingsRef.current.praiseVoice) say(lines.countAll(finished.picnicNumber));
+      return;
+    }
+    const level = levels[finished.level - 1];
+    showGame(makePicnicRound(next, level, profileRef.current.mastery, finished), false);
   }
 
   function pickLevel(track, levelId) {
@@ -553,7 +588,7 @@ export default function App() {
     const trackLevels = tracks[track].levels;
     const current = profileRef.current.progress;
     const state = trackState(current, track);
-    const level = trackLevels[state.playLevel - 1];
+    const level = trackLevels[finishedRound.level - 1];
     const firstTry = correct && !secondTry;
     const fullReward = game.reward + (level.id - 1) * 2;
     // A streak only grows on first-try answers; fixing a mistake keeps it as it was.
@@ -563,7 +598,7 @@ export default function App() {
 
     let { level: unlocked, playLevel: nextPlayLevel, levelStars } = state;
     let leveledUp = null;
-    if (firstTry && state.playLevel === unlocked && unlocked < trackLevels.length) {
+    if (firstTry && level.id === unlocked && unlocked < trackLevels.length) {
       levelStars += 1;
       if (levelStars >= trackLevels[unlocked - 1].goal) {
         unlocked += 1;
@@ -640,7 +675,7 @@ export default function App() {
       schedule(() => showGrowth(grew), 1500);
       return;
     }
-    schedule(() => startGame(finishedRound.gameId, { fresh: false }), correct ? 1650 : 2100);
+    schedule(() => continueGame(finishedRound), correct ? 1650 : 2100);
   }
 
   function closeLevelUp() {
@@ -651,7 +686,7 @@ export default function App() {
       pendingGrowth.current = null;
       return;
     }
-    if (activeGame) startGame(activeGame.id, { fresh: false });
+    if (round) continueGame(round);
   }
 
   // The princess grows with every right answer. Returns { from, to } when `amount`
@@ -676,7 +711,7 @@ export default function App() {
     setGrowth(null);
     updateProfile((current) => ({ ...current, coins: current.coins + GROWTH_COINS }));
     coinsToWallet(viewportCenter(), 8);
-    if (screen === "game" && activeGame) startGame(activeGame.id, { fresh: false });
+    if (screen === "game" && round) continueGame(round);
   }
 
   function finishTrace() {
@@ -696,6 +731,10 @@ export default function App() {
       case "count":
         setMessage("같이 세어보자!");
         setRound((current) => (current?.id === target.id ? { ...current, tapped: [] } : current));
+        if (target.picnicStep != null) {
+          say(lines.countTogether);
+          break;
+        }
         for (let index = 0; index < target.count; index += 1) {
           schedule(() => {
             setRound((current) => (
@@ -742,6 +781,13 @@ export default function App() {
   function chooseAnswer(value) {
     if (!round || round.feedback || round.eliminated?.includes(value)) return;
     const correct = value === round.answer;
+    if (!correct && round.picnicStep != null) {
+      const next = { ...round, retried: true, hint: true, lastWrong: value, eliminated: [...(round.eliminated ?? []), value] };
+      setRound(next);
+      sfx.tap();
+      giveHint(next);
+      return;
+    }
     // First mistake: take that choice (and one more wrong one) away and give a hint.
     if (!correct && !round.retried && (round.options?.length ?? 0) >= 3) {
       const others = round.options.filter((option) => option !== value && option !== round.answer);
@@ -879,7 +925,8 @@ export default function App() {
     setMessage(`펑! ${round.goal - popped.length}개 더 찾아봐.`);
   }
 
-  function openPath() {
+  function openPath(lesson = null) {
+    setPathEntry(lesson);
     sfx.tap();
     clearTimers();
     setScreen("path");
@@ -1170,6 +1217,9 @@ export default function App() {
               subject={subject}
               onSubject={pickSubject}
               onStart={startGame}
+              onPicnic={startPicnic}
+              shelf={shelves[subject]}
+              onShelf={(next) => setShelves((current) => ({ ...current, [subject]: next }))}
               onShop={openShop}
               onGift={claimDailyReward}
               onPickLevel={(levelId) => pickLevel(subject, levelId)}
@@ -1190,6 +1240,9 @@ export default function App() {
               onBack={goHome}
               onSpeak={promptFor(round) ? () => speakPrompt() : null}
               onAnswer={chooseAnswer}
+              onPictureHint={() => setRound((current) => (
+                current?.id === round.id && !current.feedback ? { ...current, usedPicture: true } : current
+              ))}
               onCountTap={tapCountObject}
               onOrder={chooseOrder}
               onMemory={chooseMemory}
@@ -1197,6 +1250,22 @@ export default function App() {
               onTraced={finishTrace}
               onSay={(text) => say(text)}
             />
+          )}
+
+          {screen === "picnic-done" && round && (
+            <section className="play-panel picnic-result">
+              <img className="picnic-friend" src="./assets/board/rabbit.webp" alt="" />
+              <h2>토끼의 소풍 끝!</h2>
+              <button className="picnic-number" onClick={() => say(lines.dex(round.picnicNumber))} aria-label={`숫자 ${round.picnicNumber} 듣기`}>
+                {round.picnicNumber} <SpeakerIcon />
+              </button>
+              <p>사과를 {nativeCount(round.picnicNumber)} 개 세었어요.</p>
+              <div className="picnic-harvest" aria-hidden="true">
+                {Array.from({ length: round.picnicNumber }, (_, i) => <img key={i} src="./assets/object-apple.webp" alt="" />)}
+              </div>
+              <button className="chunky-button journey-start" onClick={goHome}>놀이터로</button>
+              <button className="back-button" onClick={startPicnic}>한 번 더 가기</button>
+            </section>
           )}
 
           {screen === "board" && (
@@ -1217,6 +1286,7 @@ export default function App() {
 
           {screen === "path" && (
             <Path
+              initialLesson={pathEntry}
               stars={profile.path.stars}
               review={profile.review}
               today={todayKey()}
@@ -1423,7 +1493,7 @@ function Character({ equippedItems, message, roomItem, progress, growth, mood })
   );
 }
 
-function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLevel, onDex, onBoard, onPath, onClaimMissions }) {
+function Home({ profile, subject, onSubject, onStart, onPicnic, shelf, onShelf, onShop, onGift, onPickLevel, onDex, onBoard, onPath, onClaimMissions }) {
   const track = tracks[subject];
   const { level: unlocked, playLevel, levelStars } = trackState(profile.progress, subject);
   const trackLevels = track.levels;
@@ -1432,7 +1502,11 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
   const maxed = unlocked >= trackLevels.length;
   const percent = maxed ? 100 : Math.round((levelStars / top.goal) * 100);
   const giftTaken = profile.lastRewardDate === todayKey();
-  const titleWord = subject === "hangul" ? "한글" : "숫자";
+  const numbers = subject === "numbers";
+  const nextLesson = pathLessons[nextLessonIndex(profile.path.stars)];
+  const lessonAction = nextLesson?.kind === "letter" ? `${nextLesson.label} 배우기` : nextLesson ? "이어서 배우기" : "복습하기";
+  const canReview = learnedLetters(profile.path.stars, profile.review).length >= 2;
+  const reviewDue = canReview && dueItems(profile.review, todayKey()).length > 0 && profile.reviewDay !== todayKey();
 
   return (
     <div className={`home-grid subject-${subject}`}>
@@ -1451,147 +1525,148 @@ function Home({ profile, subject, onSubject, onStart, onShop, onGift, onPickLeve
         ))}
       </div>
 
-      <section className="home-hero enter" style={{ "--i": 1 }} key={`hero-${subject}`}>
-        <div className="hero-copy">
-          <p className="eyebrow">
-            <span className={`level-pill level-${current.id}`}>{current.id}단계 {current.name}</span>
-            {subject === "numbers" ? track.rangeText(current) : current.perk}
-          </p>
-          <h1>
-            오늘의 <span className="rainbow-word">{titleWord.split("").map((char, index) => <span key={index}>{char}</span>)}</span> 놀이
-          </h1>
+      <section className={`journey-hero ${numbers ? "is-picnic" : "is-hangul"}`}>
+        <div className="journey-art" aria-hidden="true" style={{ backgroundImage: `url(./assets/${numbers ? "generated-flower-garden" : "generated-princess-room"}.webp)` }}>
+          <img className="journey-lead" src={numbers ? "./assets/board/rabbit.webp" : "./assets/game-h-trace-storybook-v2.webp"} alt="" />
+          <img className="journey-prop" src={numbers ? "./assets/object-apple.webp" : "./assets/game-h-build-storybook-v2.webp"} alt="" />
         </div>
-        <div className="summary-actions">
-          <button
-            className={`chunky-button gift-button ${giftTaken ? "is-taken" : ""}`}
-            onClick={(event) => onGift(event.currentTarget)}
-            disabled={giftTaken}
-          >
-            <GiftIcon />
-            {giftTaken ? "내일 또!" : "선물"}
-          </button>
-          <button className="chunky-button dex-button" onClick={onDex}>
-            <BookIcon />
-            도감
-          </button>
-          <button className="chunky-button shop-button" onClick={onShop}>
-            <BagIcon />
-            상점
+        <div className="journey-copy">
+          <h1>{numbers ? "토끼의 숫자 소풍" : "한글 길"}</h1>
+          <p>{numbers ? "사과를 세고 숫자를 찾아봐요." : nextLesson ? `이번에 배울 건 ‘${nextLesson.title}’예요.` : "배운 글자를 다시 만나봐요."}</p>
+          <button className="chunky-button journey-start" onClick={numbers ? onPicnic : () => onPath(nextLesson ?? dailyLesson)}>
+            <PlayIcon />{numbers ? "소풍 가기" : lessonAction}
           </button>
         </div>
       </section>
 
-      {subject === "hangul" && (() => {
-        const stars = profile.path.stars;
-        const at = nextLessonIndex(stars);
-        const next = pathLessons[at];
-        const due = dueItems(profile.review, todayKey()).length;
-        return (
-          <button className="path-banner enter" style={{ "--i": 2 }} onClick={onPath}>
-            <span className="path-banner-stones" aria-hidden="true">
-              {[at - 1, at, at + 1].map((n) => (
-                <i key={n} className={n < at ? "is-done" : n === at ? "is-next" : ""}>
-                  {pathLessons[n] ? (pathLessons[n].kind.includes("eview") ? "★" : pathLessons[n].label[0]) : ""}
-                </i>
-              ))}
-            </span>
-            <span className="banner-copy">
-              <strong>한글 길</strong>
-              <small>
-                {next
-                  ? `ㄱ부터 차례대로 배워요 · 다음: ${next.title} (${at}/${pathLessons.length})`
-                  : "끝까지 다 걸었어요! 다시 해볼 수 있어요"}
-                {due > 0 && profile.reviewDay !== todayKey() && <b className="banner-due">오늘 복습 {due}개</b>}
-              </small>
-            </span>
-            <span className="play-dot"><PlayIcon /></span>
-          </button>
-        );
-      })()}
+      {!numbers && (
+        <div className="journey-shortcuts">
+          <button className="back-button" onClick={() => onPath()}>한글 길 지도</button>
+          {reviewDue && <button className="back-button" onClick={() => onPath(dailyLesson)}>오늘의 복습</button>}
+        </div>
+      )}
 
-      <MissionPanel daily={ensureDaily(profile.daily, todayKey())} onClaim={onClaimMissions} />
-
+      <GameShelf subject={subject} current={current} shelf={shelf} onShelf={onShelf} onStart={onStart} />
       <button className="board-banner enter" style={{ "--i": 3 }} onClick={onBoard}>
         <img className="banner-illustration" src="./assets/game-dice-village-storybook-v2.webp" alt="" aria-hidden="true" />
         <span className="banner-copy">
           <strong>주사위 마을</strong>
           <small>
             {profile.board.game && !profile.board.game.over
-              ? `이어서 하기 · ${profile.board.game.players.map((player) => player.name).join(", ")}`
+              ? `이어서 하기 (${profile.board.game.players.map((player) => player.name).join(", ")})`
               : "2~4명이 함께! 주사위를 세고 집을 지어요"}
           </small>
         </span>
         <span className="play-dot"><PlayIcon /></span>
       </button>
 
-      <section className="level-panel enter" style={{ "--i": 3 }} aria-label="단계" key={`level-${subject}`}>
-        <div className="level-progress">
-          <div className="level-progress-head">
-            <strong>
-              {maxed ? "모든 단계를 열었어요!" : `${top.id + 1}단계 ${trackLevels[top.id].name}까지`}
-            </strong>
-            {!maxed && (
-              <span className="star-count">
-                <StarShape />
-                {levelStars} / {top.goal}
-              </span>
+      <details className="home-levels" key={`levels-${subject}`}>
+        <summary>단계 고르기 <span>{current.id}단계 {current.name}</span></summary>
+        <section className="level-panel" aria-label="단계">
+          <div className="level-progress">
+            <div className="level-progress-head">
+              <strong>
+                {maxed ? "모든 단계를 열었어요!" : `${top.id + 1}단계 ${trackLevels[top.id].name}까지`}
+              </strong>
+              {!maxed && (
+                <span className="star-count">
+                  <StarShape />
+                  {levelStars} / {top.goal}
+                </span>
+              )}
+            </div>
+            <div className="level-bar">
+              <span style={{ width: `${percent}%` }} />
+            </div>
+            {playLevel < unlocked && (
+              <p className="level-hint">연습 중이에요. 별은 {unlocked}단계에서 모여요.</p>
             )}
           </div>
-          <div className="level-bar">
-            <span style={{ width: `${percent}%` }} />
+          <div className="level-chips" role="radiogroup" aria-label="단계 고르기">
+            {trackLevels.map((level) => {
+              const open = level.id <= unlocked;
+              const active = level.id === playLevel;
+              return (
+                <button
+                  key={level.id}
+                  role="radio"
+                  aria-checked={active}
+                  className={`level-chip level-${level.id} ${active ? "is-active" : ""} ${open ? "" : "is-locked"}`}
+                  onClick={() => onPickLevel(level.id)}
+                  disabled={!open}
+                  style={{ "--i": level.id }}
+                >
+                  <span className="level-chip-num">{open ? level.id : <LockIcon />}</span>
+                  <span className="level-chip-name">{level.name}</span>
+                  {active && <span className="level-chip-check"><CheckIcon /></span>}
+                </button>
+              );
+            })}
           </div>
-          {playLevel < unlocked && (
-            <p className="level-hint">연습 중이에요. 별은 {unlocked}단계에서 모여요.</p>
-          )}
-        </div>
-        <div className="level-chips" role="radiogroup" aria-label="단계 고르기">
-          {trackLevels.map((level) => {
-            const open = level.id <= unlocked;
-            const active = level.id === playLevel;
-            return (
-              <button
-                key={level.id}
-                role="radio"
-                aria-checked={active}
-                className={`level-chip level-${level.id} ${active ? "is-active" : ""} ${open ? "" : "is-locked"}`}
-                onClick={() => onPickLevel(level.id)}
-                disabled={!open}
-                style={{ "--i": level.id }}
-              >
-                <span className="level-chip-num">{open ? level.id : <LockIcon />}</span>
-                <span className="level-chip-name">{level.name}</span>
-                {active && <span className="level-chip-check"><CheckIcon /></span>}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+        </section>
+      </details>
 
-      <section className={`game-grid games-${track.games.length}`} aria-label="게임 목록" key={`games-${subject}`}>
-        {track.games.map((game, index) => {
+      <div className="summary-actions">
+        <button
+          className={`chunky-button gift-button ${giftTaken ? "is-taken" : ""}`}
+          onClick={(event) => onGift(event.currentTarget)}
+          disabled={giftTaken}
+        >
+          <GiftIcon />
+          {giftTaken ? "내일 또!" : "선물"}
+        </button>
+        <button className="chunky-button dex-button" onClick={onDex}>
+          <BookIcon />
+          도감
+        </button>
+        <button className="chunky-button shop-button" onClick={onShop}>
+          <BagIcon />
+          상점
+        </button>
+      </div>
+
+      <MissionPanel daily={ensureDaily(profile.daily, todayKey())} onClaim={onClaimMissions} />
+    </div>
+  );
+}
+
+const gameShelves = {
+  numbers: [
+    { label: "세고 찾기", ids: ["count", "find", "order"] },
+    { label: "비교와 계산", ids: ["compare", "missing", "add"] },
+    { label: "카드와 풍선", ids: ["memory", "balloon"] }
+  ],
+  hangul: [
+    { label: "듣고 읽기", ids: ["h-listen", "h-picture"] },
+    { label: "만들고 쓰기", ids: ["h-build", "h-blend", "h-trace"] },
+    { label: "카드와 풍선", ids: ["h-memory", "h-balloon"] }
+  ]
+};
+
+function GameShelf({ subject, current, shelf, onShelf, onStart }) {
+  const groups = gameShelves[subject];
+  return (
+    <section className="game-shelf" aria-label="자유 놀이">
+      <h2>골라서 놀기</h2>
+      <div className="shelf-tabs" role="group" aria-label="놀이 종류">
+        {groups.map((group, index) => (
+          <button key={group.label} aria-pressed={shelf === index} onClick={() => onShelf(index)}>{group.label}</button>
+        ))}
+      </div>
+      <div className="shelf-cards">
+        {groups[shelf].ids.map((id) => {
+          const game = allGames.find((card) => card.id === id);
           return (
-            <button
-              key={game.id}
-              className={`game-card ${game.color} enter`}
-              style={{ "--i": index + 4 }}
-              onClick={() => onStart(game.id)}
-            >
-              <span className="game-art">
-                <img src={game.image} alt="" aria-hidden="true" />
-              </span>
-              <span className="game-copy">
-                <strong>{game.title}</strong>
-                <small>{game.subtitle}</small>
-              </span>
-              <span className="game-meta">
-                <span className="reward-chip"><CoinIcon />+{game.reward + (current.id - 1) * 2}</span>
-                <span className="play-dot"><PlayIcon /></span>
-              </span>
+            <button key={id} className={`shelf-card ${game.color}`} onClick={() => onStart(id)}>
+              <img src={game.image} alt="" />
+              <strong>{game.title}</strong>
+              <small>{game.subtitle}</small>
+              <span className="shelf-reward"><CoinIcon /> +{game.reward + (current.id - 1) * 2}</span>
             </button>
           );
         })}
-      </section>
-    </div>
+      </div>
+    </section>
   );
 }
 
