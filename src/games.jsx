@@ -1,7 +1,7 @@
 import { BackIcon, CheckIcon, CoinIcon, SpeakerIcon, StarShape } from "./icons";
 import { VoiceStage, tileState } from "./gameParts";
 import { HangulBlend, HangulBuild, HangulListen, HangulPicture, HangulTrace } from "./hangulGames";
-import { toneClass } from "./rounds";
+import { picnicStops, toneClass } from "./rounds";
 
 export function GameScreen({
   game,
@@ -12,6 +12,7 @@ export function GameScreen({
   onBack,
   onSpeak,
   onAnswer,
+  onPictureHint,
   onCountTap,
   onOrder,
   onMemory,
@@ -45,8 +46,21 @@ export function GameScreen({
         <span className="reward-chip big"><CoinIcon />+{reward}</span>
       </div>
 
+      {round.picnicStep != null && (
+        <ol className="picnic-stops" aria-label="소풍 길">
+          {picnicStops.map(({ label }, at) => (
+            <li key={label} aria-current={at === round.picnicStep ? "step" : undefined} className={at < round.picnicStep ? "visited" : ""}>
+              <span aria-hidden="true">
+                {at === round.picnicStep ? <img src="./assets/board/rabbit.webp" alt="" /> : at < round.picnicStep ? <CheckIcon /> : at + 1}
+              </span>
+              {label}
+            </li>
+          ))}
+        </ol>
+      )}
+
       <div className="round" key={round.id}>
-        {game.id === "find" && <FindGame round={round} speaking={speaking} onSpeak={onSpeak} onAnswer={onAnswer} />}
+        {game.id === "find" && <FindGame round={round} speaking={speaking} onSpeak={onSpeak} onAnswer={onAnswer} onHint={onPictureHint} />}
         {game.id === "count" && <CountGame round={round} onCountTap={onCountTap} onAnswer={onAnswer} />}
         {game.id === "order" && <OrderGame round={round} onOrder={onOrder} />}
         {(game.id === "memory" || game.id === "h-memory") && <MemoryGame round={round} onMemory={onMemory} />}
@@ -72,6 +86,7 @@ function OptionGrid({ round, onAnswer }) {
           key={value}
           className={`number-tile ${toneClass(value)} ${tileState(value, round, round.answer)}`}
           style={{ "--i": index }}
+          disabled={Boolean(round.feedback) || round.eliminated?.includes(value)}
           onClick={() => onAnswer(value)}
         >
           <span>{value}</span>
@@ -81,10 +96,24 @@ function OptionGrid({ round, onAnswer }) {
   );
 }
 
-function FindGame({ round, speaking, onSpeak, onAnswer }) {
+function FindGame({ round, speaking, onSpeak, onAnswer, onHint }) {
   return (
     <>
       <VoiceStage speaking={speaking} onSpeak={onSpeak} title="잘 듣고 숫자를 찾아요" />
+      {round.picnicStep != null && (
+        <details
+          className="picnic-clue"
+          open={round.hint || undefined}
+          onToggle={(event) => {
+            if (event.currentTarget.open && !round.usedPicture) onHint();
+          }}
+        >
+          <summary>그림 힌트</summary>
+          <div className="picnic-harvest" aria-label={`사과 ${round.answer}개`}>
+            {Array.from({ length: round.answer }, (_, i) => <img key={i} src="./assets/object-apple.webp" alt="" />)}
+          </div>
+        </details>
+      )}
       <OptionGrid round={round} onAnswer={onAnswer} />
     </>
   );

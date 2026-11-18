@@ -8145,3 +8145,158 @@ button.coin-slot:not(:disabled):active {
     animation: none;
   }
 }
+
+/* A short guided outing first, with the free-play shelves below it. */
+.home-grid { justify-content: flex-start; }
+.journey-hero {
+  --journey-ink: #244c37;
+  --journey-accent: #266344;
+  --journey-bg: #f7f8d9;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 3px solid white;
+  border-radius: var(--radius-lg);
+  color: var(--journey-ink);
+  background: var(--journey-bg);
+  box-shadow: var(--surface-shadow);
+}
+.journey-hero.is-hangul {
+  --journey-ink: #513155;
+  --journey-accent: #813e72;
+  --journey-bg: #fff0e7;
+}
+.journey-art {
+  position: absolute;
+  inset: 0 0 0 32%;
+  z-index: -1;
+  background-position: center 57%;
+  background-size: cover;
+}
+.journey-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--journey-bg), transparent 75%);
+}
+.journey-lead, .journey-prop {
+  position: absolute;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 5px #49301e38);
+}
+.journey-lead { right: 5%; bottom: 6%; width: 64%; height: 84%; }
+.journey-prop { right: 4%; bottom: 6%; width: 20%; height: 34%; }
+.journey-copy {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 10px;
+  width: 65%;
+  min-height: 218px;
+  padding: 22px clamp(18px, 3vw, 38px);
+}
+.journey-copy h1 { font-size: clamp(1.85rem, 3.4vw, 3rem); line-height: 1.2; }
+.journey-copy p { font-size: clamp(1rem, 1.7vw, 1.22rem); line-height: 1.5; }
+.journey-start {
+  margin-top: 6px;
+  min-height: 52px;
+  color: white;
+  background: var(--journey-accent, #266344);
+  box-shadow: 0 4px 0 #152d32;
+}
+.journey-shortcuts { display: flex; flex-wrap: wrap; gap: 10px; }
+.game-shelf {
+  padding: clamp(14px, 2vw, 24px);
+  border-radius: var(--radius-lg);
+  background: #fffdf9;
+  box-shadow: var(--surface-shadow);
+}
+.game-shelf h2 { font-size: 1.6rem; }
+.shelf-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+.shelf-tabs button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 14px;
+  color: #595269;
+}
+.shelf-tabs [aria-pressed="true"] { background: #eee9fa; color: #493278; }
+.shelf-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.shelf-card {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 6px;
+  padding: 10px 14px 12px;
+  border-radius: 18px;
+  border: 2px solid #e8e1d9;
+  background: #fff9ef;
+  text-align: left;
+}
+.shelf-card img { width: 100%; height: 76px; object-fit: contain; }
+.shelf-card strong { font-size: 1.25rem; }
+.shelf-card small { color: #575062; line-height: 1.4; }
+.shelf-reward { display: inline-flex; align-items: center; gap: 3px; color: #78531a; }
+.shelf-reward svg { width: 18px; height: 18px; }
+.home-levels { border-radius: 20px; background: var(--paper); }
+.home-levels summary, .picnic-clue summary {
+  padding: 13px 18px;
+  min-height: 48px;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+.home-levels summary span { float: right; color: var(--ink-soft); }
+.home-levels .level-panel { box-shadow: none; padding-top: 4px; }
+.home-grid > .summary-actions { justify-content: flex-start; }
+.picnic-stops {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.picnic-stops li {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  border-radius: 12px;
+  background: #f0edf3;
+  color: #655d6b;
+}
+.picnic-stops [aria-current="step"] { background: #285e46; color: white; }
+.picnic-stops .visited { background: #dceee1; color: #23503a; }
+.picnic-stops li span { display: grid; place-items: center; }
+.picnic-stops img { width: 28px; height: 32px; object-fit: contain; }
+.picnic-stops svg { width: 16px; height: 16px; }
+.picnic-clue { align-self: center; border-radius: 16px; background: #fff6e1; text-align: center; }
+.picnic-clue .picnic-harvest { padding: 0 12px 10px; }
+.picnic-harvest { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; max-width: 196px; }
+.picnic-harvest img { width: 36px; height: 36px; object-fit: contain; }
+.picnic-result { align-items: center; justify-content: center; text-align: center; background: #f8fae8; }
+.picnic-number { display: inline-flex; align-items: center; gap: 8px; min-height: 52px; padding: 4px 18px; border-radius: 18px; background: #e0efd8; font-size: 2rem; }
+.picnic-number svg { width: 24px; height: 24px; }
+.picnic-result p { font-size: 1.35rem; }
+.picnic-friend { width: 120px; height: 140px; object-fit: contain; }
+@media (max-width: 900px) {
+  /* Put the activity within reach in portrait. The princess and rewards follow it. */
+  .stage-home .screen, .stage-picnic-done .screen { grid-row: 1; }
+  .stage-game .character-panel, .stage-path .character-panel { display: block; }
+  .stage-game .character-panel > :not(.speech), .stage-path .character-panel > :not(.speech) { display: none; }
+  .stage-game .speech, .stage-path .speech { min-height: 52px; padding: 10px; }
+  .stage-game .speech::after, .stage-path .speech::after { display: none; }
+}
+@media (max-width: 600px) {
+  .journey-copy { min-height: 182px; padding: 15px; width: 65%; }
+  .journey-copy h1 { font-size: 1.7rem; }
+  .journey-copy p { font-size: 1rem; }
+  .shelf-tabs { gap: 2px; }
+  .shelf-tabs button { padding-inline: 9px; }
+  .shelf-cards { grid-template-columns: 1fr; gap: 6px; }
+  .shelf-card { grid-template-columns: 52px 1fr auto; align-items: center; column-gap: 12px; row-gap: 0; padding: 6px 10px; }
+  .shelf-card img { grid-column: 1; grid-row: 1 / 3; height: 52px; }
+  .shelf-card small { grid-column: 2; }
+  .shelf-reward { grid-row: 1 / 3; grid-column: 3; }
+  .picnic-stops li { gap: 3px; font-size: 0.88rem; }
+}

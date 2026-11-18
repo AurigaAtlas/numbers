@@ -231,3 +231,37 @@ export function makeRound(gameId, level, mastery = {}) {
 
   return base;
 }
+
+// One picnic connects a quantity to its numeral, then practises the number line.
+// After a hint, the last stop revisits the same number before the outing ends.
+export const picnicStops = [
+  { gameId: "count", label: "사과 세기" },
+  { gameId: "find", label: "숫자 찾기" },
+  { gameId: "missing", label: "빈칸 채우기" }
+];
+
+export function makePicnicRound(step, level, mastery, previous) {
+  const { gameId } = picnicStops[step];
+  const firstOuting = !Object.keys(mastery).some((key) => key.startsWith("num:"));
+  const max = previous?.picnicMax ?? (firstOuting ? Math.min(3, level.countMax) : level.countMax);
+  const pool = range(1, max);
+  const practice = Boolean(previous?.picnicPractice || previous?.retried || previous?.usedPicture);
+  const chooseNumber = (numbers) => pickWeighted(numbers, (n) => `num:${n}`, mastery);
+  const picnicNumber = previous?.picnicNumber ?? chooseNumber(pool);
+  const answer = gameId === "missing" && !practice ? chooseNumber(pool.filter((n) => n !== picnicNumber)) : picnicNumber;
+  const choices = level.id === 1 ? 2 : 3;
+  const round = {
+    id: `${Date.now()}-${Math.random()}`,
+    gameId, level: level.id, feedback: null,
+    picnicStep: step, picnicNumber, picnicMax: max, picnicPractice: practice,
+    answer, options: makeOptions(answer, 1, max, choices)
+  };
+  if (gameId === "count") {
+    return { ...round, count: answer, tapped: [], object: countObjects.find((object) => object.name === "사과") };
+  }
+  if (gameId === "missing") {
+    const start = Math.max(1, Math.min(answer - 1, max - 2));
+    return { ...round, sequence: range(start, start + 2), blank: answer - start, step: 1 };
+  }
+  return round;
+}
