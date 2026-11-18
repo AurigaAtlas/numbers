@@ -976,7 +976,7 @@ export function Board({
       ) : phase === "results" ? (
         <Results game={game} say={say} onAgain={startGame} onHome={onBack} />
       ) : (
-        <div className="board-main">
+        <div className="board-main" style={event?.kind === "quiz" ? { visibility: "hidden" } : undefined}>
           <div className="board-players">
             {game.players.map((player, index) => (
               <PlayerCard key={index} player={player} index={index} active={index === game.turn} fx={fx} />
@@ -1090,7 +1090,7 @@ export function Board({
 
       {event && game && (
         <div className="sheet-backdrop board-backdrop">
-          <section className="sheet board-sheet" role="dialog" aria-modal="true" aria-label={event.tile?.name ?? event.title}>
+          <section className="sheet board-sheet" role="dialog" aria-modal="true" aria-label={event.kind === "quiz" ? "마을 퀴즈" : event.tile?.name ?? event.title}>
             {event.kind === "lot" && (
               <div className="lot-card" style={{ "--group": groupColors[event.tile.group] }}>
                 <span className="lot-emoji" aria-hidden="true"><img src={event.tile.image} alt="" /></span>
@@ -1192,14 +1192,19 @@ export function Board({
                 <p className="quiz-title">
                   <img className="quiz-title-image" src={event.tile.image} alt="" aria-hidden="true" />
                   {event.letter
-                    ? `${event.tile.name} · 첫 글자를 맞히면`
+                    ? "그림 문제를 맞히면"
                     : eventIsRobot ? `${josa(current.name, "을", "를")} 도와줘요! · 맞히면` : `${event.tile.name} · 맞히면`}
                   {" "}<Won n={event.reward} />
                 </p>
                 <div className="round quiz-round" key={quiz.id}>
                   {quiz.gameId === "count" && <CountGame round={quiz} onCountTap={tapQuizCount} onAnswer={answerQuiz} />}
                   {quiz.gameId === "add" && <AddGame round={quiz} onAnswer={answerQuiz} />}
-                  {quiz.gameId === "h-picture" && <HangulPicture round={quiz} onAnswer={answerQuiz} />}
+                  {quiz.gameId === "h-picture" && (
+                    <>
+                      <button className="back-button" onClick={() => say(lines.prompt(quiz))}>문제 다시 듣기</button>
+                      <HangulPicture round={quiz} onAnswer={answerQuiz} />
+                    </>
+                  )}
                   {quiz.gameId === "h-build" && <HangulBuild round={quiz} onAnswer={answerQuiz} />}
                   {quiz.gameId === "h-listen" && (
                     <HangulListen round={quiz} speaking={false} onSpeak={() => say(lines.prompt(quiz))} onAnswer={answerQuiz} />

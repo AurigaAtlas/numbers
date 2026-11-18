@@ -23,7 +23,7 @@ import {
   TrophyIcon
 } from "./icons";
 import { bump, centerOf, flyCoins, prefersReducedMotion, viewportCenter } from "./motion";
-import { blendParts, hangulLevels, makeHangulRound, spokenForm } from "./hangul";
+import { blendParts, hangulLevels, makeHangulRound } from "./hangul";
 import { MISSION_REWARD, applyMissionEvent, dayKey, dueItems, ensureDaily, itemKey, logPlay, missionsDone, recordResult, scheduleReview } from "./learning";
 import { MissionPanel } from "./Missions";
 import { LevelUpOverlay, SettingsSheet } from "./overlays";
@@ -32,7 +32,7 @@ import { Path } from "./Path";
 import { GrowthChip, GrowthOverlay, PrincessDoll } from "./Princess";
 import { GROWTH_COINS, LESSON_STARS, stageOf } from "./princess";
 import { dailyLesson, learnedLetters, nextLessonIndex, pathLessons } from "./path";
-import { countingWord, josa, makePicnicRound, makeRound, nativeCount, numberJosa, picnicStops } from "./rounds";
+import { josa, makePicnicRound, makeRound, nativeCount, picnicStops } from "./rounds";
 import { sfx } from "./sfx";
 import { say as lines } from "./speech";
 import { installSoundUnlock, prepareSpeech, speak, stopSpeaking } from "./voice";
@@ -530,7 +530,7 @@ export default function App() {
     setScreen("game");
     setCelebration(null);
     if (fresh) sfx.tap();
-    if (fresh || nextRound.picnicStep != null) setMessage(game.intro);
+    setMessage(game.intro);
     if (promptFor(nextRound)) {
       const answer = answerFeedback(nextRound);
       prepareSpeech([promptFor(nextRound), answer ? lines.answerIs(answer.value) : null].filter(Boolean));
@@ -759,7 +759,7 @@ export default function App() {
         break;
       }
       case "h-picture":
-        setMessage(`${target.entry.word}, 천천히 읽어볼까?`);
+        setMessage("그림 이름을 천천히 들어봐!");
         say(lines.slowWord(target.entry.word), { rate: "slow" });
         break;
       case "h-build":
@@ -769,7 +769,7 @@ export default function App() {
       case "h-blend": {
         // Let the child hear what the wrong piece makes, then what to aim for.
         const made = blendParts(target, target.lastWrong);
-        setMessage(`${josa(made.syllable, "이", "가")} 됐어! ${josa(target.target, "을", "를")} 만들어 볼까?`);
+        setMessage("두 소리가 어떻게 다른지 들어봐!");
         say(`${lines.blend(made)} ${lines.notThis(made.syllable, target.target)}`, { rate: "slow" });
         break;
       }
@@ -810,7 +810,7 @@ export default function App() {
     sfx.count(Math.min(tapped.length, 12));
     say(lines.counting(tapped.length), { rate: "fast" });
     if (tapped.length === round.count) {
-      setMessage(`모두 ${countingWord(tapped.length)}! 이제 숫자를 골라봐.`);
+      setMessage("다 세었어! 이제 숫자를 골라봐.");
     }
   }
 
@@ -822,8 +822,8 @@ export default function App() {
         setRound({ ...round, retried: true, lastWrong: value });
         sfx.wrong();
         setMood({ id: Date.now(), type: "oops" });
-        setMessage(`앗, ${value}보다 ${numberJosa(round.next, "을", "를")} 먼저 찾아봐!`);
-        say(lines.orderHint(round.next));
+        setMessage("남은 카드 중 가장 작은 수를 찾아봐!");
+        say(lines.tryAgain);
         return;
       }
       setRound({ ...round, feedback: { picked: value, correct: false } });
@@ -838,7 +838,7 @@ export default function App() {
       return;
     }
     setRound({ ...round, selected, lastWrong: null, next: value + 1 });
-    setMessage(`${value} 다음은 ${value + 1}!`);
+    setMessage(`${value} 다음 숫자는 뭘까?`);
   }
 
   function chooseMemory(cardId) {
@@ -904,13 +904,8 @@ export default function App() {
     if (balloon.value !== round.target) {
       sfx.wrong();
       setRound({ ...round, wrong: { id: balloonId, key: Date.now() } });
-      if (round.gameId === "h-balloon") {
-        // Hearing what was popped helps tell the letters apart.
-        say(spokenForm(balloon.value));
-        setMessage(`그건 ${balloon.value}! ${round.target} 풍선을 찾아봐.`);
-      } else {
-        setMessage(`그건 ${balloon.value}! ${numberJosa(round.target, "을", "를")} 찾아봐.`);
-      }
+      setMessage("다시 듣고 풍선을 찾아봐!");
+      speakPrompt(round);
       return;
     }
 

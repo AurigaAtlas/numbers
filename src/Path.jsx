@@ -369,7 +369,7 @@ export function Path({ initialLesson, stars, review, today, reviewedToday, say, 
           </button>
           <div className="play-title">
             <h2>
-              {lesson.title}
+              {current?.type === "quiz" && !result ? "한글 퀴즈" : lesson.title}
               {!result && current?.warmup && <span className="step-tag">복습</span>}
               {!result && current?.repeat && <span className="step-tag is-again">한 번 더</span>}
             </h2>
