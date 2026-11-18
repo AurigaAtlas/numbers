@@ -29,7 +29,7 @@ export function vowelExample(vowel) {
 const numberPrompt = {
   find: (round) => `${josa(sinoWord(round.answer), "을", "를")} 찾아주세요.`,
   count: () => "몇 개인지 세어볼까요?",
-  order: (round) => `${sinoWord(round.sequence[0])}부터 차례대로 눌러주세요.`,
+  order: () => "더 작은 숫자를 골라주세요.",
   compare: (round) => {
     if (round.showNumerals) return round.ask === "more" ? "더 큰 숫자를 골라주세요." : "더 작은 숫자를 골라주세요.";
     return round.ask === "more" ? "더 많은 쪽을 골라주세요." : "더 적은 쪽을 골라주세요.";

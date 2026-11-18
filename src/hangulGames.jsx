@@ -46,30 +46,16 @@ export function HangulListen({ round, speaking, onSpeak, onAnswer }) {
 
 export function HangulPicture({ round, onAnswer }) {
   const { entry, mode } = round;
-  const solved = round.feedback?.correct;
   return (
     <>
       <div className="picture-stage">
         {entry.image
           ? <img className="picture-image" src={entry.image} alt="" aria-hidden="true" />
           : <span className="picture-emoji" aria-hidden="true">{entry.emoji}</span>}
-        {mode !== "word" && (
-          <div className="picture-word" aria-label={entry.word}>
-            {entry.word.split("").map((char, index) => (
-              <span
-                key={index}
-                className={`picture-char ${index === 0 ? "is-first" : ""} ${index === 0 && mode === "syllable" && !solved ? "is-hidden" : ""}`}
-                style={{ "--i": index }}
-              >
-                {index === 0 && mode === "syllable" && !solved ? "?" : char}
-              </span>
-            ))}
-          </div>
-        )}
-        {mode === "word" && solved && <div className="picture-word is-reveal">{entry.word}</div>}
+        {round.feedback && <div className="picture-word is-reveal">{entry.word}</div>}
         <p className="picture-question">
-          {mode === "initial" && "첫 글자는 어떤 자음으로 시작할까?"}
-          {mode === "syllable" && "물음표에 들어갈 글자는?"}
+          {mode === "initial" && "그림 이름은 어떤 자음으로 시작할까?"}
+          {mode === "syllable" && "그림 이름의 첫 글자는 뭘까?"}
           {mode === "word" && "그림에 맞는 낱말을 골라요"}
         </p>
       </div>
@@ -85,12 +71,12 @@ export function HangulBuild({ round, onAnswer }) {
       <div className={`build-stage ${solved ? "is-solved" : ""}`}>
         <span className="build-piece piece-c">
           {round.consonant}
-          <small>{letterName(round.consonant)}</small>
+          {solved && <small>{letterName(round.consonant)}</small>}
         </span>
         <span className="build-plus">+</span>
         <span className="build-piece piece-v">
           {round.vowel}
-          <small>{letterName(round.vowel)}</small>
+          {solved && <small>{letterName(round.vowel)}</small>}
         </span>
         <span className="build-plus">=</span>
         <span className={`build-result ${solved ? "is-filled" : ""}`}>
@@ -105,14 +91,14 @@ export function HangulBuild({ round, onAnswer }) {
 // 소리 합치기: every piece says its own sound when tapped, so children can try the
 // blend out loud before choosing the missing piece.
 export function HangulBlend({ round, onAnswer, onSay }) {
-  const solved = round.feedback?.correct;
+  const solved = Boolean(round.feedback);
   const parts = blendParts(round);
   const piece = (kind, jamo, sound, extra = "") => (round.mode === kind && !solved ? (
     <span className={`blend-piece is-missing ${extra}`}>?</span>
   ) : (
     <button className={`blend-piece ${extra} ${round.mode === kind ? "is-found" : ""}`} onClick={() => onSay(sound)}>
       {jamo}
-      <small>{sound}</small>
+      {solved && <small>{sound}</small>}
     </button>
   ));
   return (
@@ -136,12 +122,12 @@ export function HangulBlend({ round, onAnswer, onSay }) {
           </>
         )}
         <span className="build-plus">=</span>
-        <button className="blend-target" onClick={() => onSay(round.target)} aria-label={`${round.target} 듣기`}>
-          {round.target}
+        <button className="blend-target" onClick={() => onSay(round.target)} aria-label="완성할 글자 듣기">
+          {solved && round.target}
           <SpeakerIcon />
         </button>
       </div>
-      <p className="blend-tip">글자를 누르면 소리가 나요</p>
+      <p className="blend-tip">소리를 듣고 빈칸에 들어갈 조각을 골라요</p>
       <LetterGrid round={round} onAnswer={onAnswer} />
     </>
   );

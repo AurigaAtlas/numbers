@@ -1767,9 +1767,9 @@ h2 {
 }
 
 .track-slot.is-next {
-  color: var(--num);
-  background: var(--num-soft);
-  box-shadow: 0 0 0 3px var(--num);
+  color: var(--ink);
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--ink-soft);
   animation: tile-hint 1200ms ease-in-out infinite;
 }
 
@@ -8300,3 +8300,5 @@ button.coin-slot:not(:disabled):active {
   .shelf-reward { grid-row: 1 / 3; grid-column: 3; }
   .picnic-stops li { gap: 3px; font-size: 0.88rem; }
 }
+
+.blend-stage:not(.is-solved) .blend-target svg { position: static; width: 38px; height: 38px; }

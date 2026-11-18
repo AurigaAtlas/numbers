@@ -34,7 +34,7 @@ export function GameScreen({
             <span className="eyebrow-text">{game.subtitle}</span>
           </p>
         </div>
-        {onSpeak && game.id !== "find" && game.id !== "h-listen" && (
+        {onSpeak && game.id !== "find" && game.id !== "h-listen" && !game.id.endsWith("balloon") && (
           <button
             className={`icon-button listen-mini ${speaking ? "is-speaking" : ""}`}
             onClick={onSpeak}
@@ -67,7 +67,7 @@ export function GameScreen({
         {game.id === "compare" && <CompareGame round={round} onAnswer={onAnswer} />}
         {game.id === "missing" && <MissingGame round={round} onAnswer={onAnswer} />}
         {game.id === "add" && <AddGame round={round} onAnswer={onAnswer} />}
-        {(game.id === "balloon" || game.id === "h-balloon") && <BalloonGame round={round} onBalloon={onBalloon} />}
+        {(game.id === "balloon" || game.id === "h-balloon") && <BalloonGame round={round} onBalloon={onBalloon} onSpeak={onSpeak} />}
         {game.id === "h-listen" && <HangulListen round={round} speaking={speaking} onSpeak={onSpeak} onAnswer={onAnswer} />}
         {game.id === "h-picture" && <HangulPicture round={round} onAnswer={onAnswer} />}
         {game.id === "h-build" && <HangulBuild round={round} onAnswer={onAnswer} />}
@@ -130,13 +130,13 @@ function ObjectPile({ count, object, className = "", counted, onTap, leaving = 0
         return (
           <Tag
             key={index}
-            className={`count-object ${order ? `is-counted ${toneClass(order)}` : ""} ${isLeaving ? "is-leaving" : ""}`}
+            className={`count-object ${order ? `is-counted ${onTap ? "n-4" : toneClass(order)}` : ""} ${isLeaving ? "is-leaving" : ""}`}
             style={{ "--i": index, "--tilt": `${((index * 37) % 13) - 6}deg` }}
             onClick={onTap ? () => onTap(index) : undefined}
             aria-label={onTap ? (order ? `${order}번째` : `${object.name} 세기`) : undefined}
           >
             <img src={object.image} alt="" aria-hidden="true" />
-            {order > 0 && <span className="count-badge">{order}</span>}
+            {order > 0 && <span className="count-badge">{onTap ? "✓" : order}</span>}
           </Tag>
         );
       })}
@@ -147,7 +147,7 @@ function ObjectPile({ count, object, className = "", counted, onTap, leaving = 0
 export function CountGame({ round, onCountTap, onAnswer }) {
   return (
     <>
-      <div className="count-stage" aria-label={`${round.object.name} ${round.count}개`}>
+      <div className="count-stage" aria-label={`${round.object.name} 세기`}>
         <ObjectPile
           count={round.count}
           object={round.object}
@@ -156,8 +156,7 @@ export function CountGame({ round, onCountTap, onAnswer }) {
           onTap={onCountTap}
         />
         <div className="count-meter" aria-hidden="true">
-          <span>센 개수</span>
-          <strong key={round.tapped.length}>{round.tapped.length}</strong>
+          <span>{round.tapped.length === round.count ? "다 세었어요" : "하나씩 눌러요"}</span>
         </div>
       </div>
       <OptionGrid round={round} onAnswer={onAnswer} />
@@ -175,9 +174,9 @@ function OrderGame({ round, onOrder }) {
           return (
             <span
               key={value}
-              className={`track-slot ${toneClass(value)} ${done ? "is-done" : ""} ${isNext ? "is-next" : ""}`}
+              className={`track-slot ${done ? toneClass(value) : ""} ${done ? "is-done" : ""} ${isNext ? "is-next" : ""}`}
             >
-              {value}
+              {done ? value : isNext ? "?" : "–"}
             </span>
           );
         })}
@@ -328,14 +327,14 @@ export function AddGame({ round, onAnswer }) {
 
 const balloonColors = ["#ff5c7a", "#3d8bff", "#36bf77", "#ffb21f", "#9b7bff", "#ff8a3d", "#1fb3cc", "#e35cd0"];
 
-function BalloonGame({ round, onBalloon }) {
+function BalloonGame({ round, onBalloon, onSpeak }) {
   const poppedTargets = round.popped.length;
   return (
     <>
       <div className="balloon-target">
-        <span className={`target-number ${typeof round.target === "number" ? toneClass(round.target) : "is-letter"}`}>{round.target}</span>
+        <button className="icon-button" onClick={onSpeak} aria-label="풍선 소리 다시 듣기"><SpeakerIcon /></button>
         <span className="target-copy">
-          <strong>풍선을 찾아 터뜨려요</strong>
+          <strong>소리를 듣고 풍선을 터뜨려요</strong>
           <span className="target-dots">
             {Array.from({ length: round.goal }, (_, index) => (
               <i key={index} className={index < poppedTargets ? "is-done" : ""} />
