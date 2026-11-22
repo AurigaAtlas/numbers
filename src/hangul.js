@@ -217,7 +217,7 @@ export function makeWordRound(entry, level) {
   return pictureRound({ id: `${Date.now()}-${Math.random()}`, gameId: "h-picture", level: level.id, feedback: null }, entry, level);
 }
 
-export function makeHangulRound(gameId, level, mastery = {}) {
+export function makeHangulRound(gameId, level, mastery = {}, sequenceStage = 1) {
   const koKey = (text) => `ko:${text}`;
   const weighted = (pool) => pickWeighted(pool, koKey, mastery);
   const base = { id: `${Date.now()}-${Math.random()}`, gameId, level: level.id, feedback: null };
@@ -298,6 +298,18 @@ export function makeHangulRound(gameId, level, mastery = {}) {
   }
 
   // 글자 짝 맞추기: each pair is a letter and what it belongs to (a picture, a sound or a word).
+  if (gameId === "h-sequence") {
+    const letters = [..."가나다라마바"];
+    const length = 2 + Math.floor((Math.min(sequenceStage, 5) - 1) / 2) + Math.max(0, sequenceStage - 5);
+    const options = shuffle(letters).slice(0, Math.min(letters.length, sequenceStage + 1));
+    // Start with distinct letters. Longer sequences can revisit a card.
+    const sequence = shuffle(options).slice(0, length);
+    while (sequence.length < length) {
+      sequence.push(pick(options.filter((letter) => letter !== sequence[sequence.length - 1])));
+    }
+    return { ...base, sequenceStage, sequence, options, studying: true, cursor: 0 };
+  }
+
   if (gameId === "h-memory") {
     const pairs = level.memoryPairs;
     let items;

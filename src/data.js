@@ -360,6 +360,16 @@ export const hangulGameCards = [
     reward: 11
   },
   {
+    id: "h-sequence",
+    track: "hangul",
+    title: "글자 순서 기억하기",
+    subtitle: "기억한 순서대로 글자를 눌러요",
+    intro: "글자를 왼쪽부터 읽고 순서를 기억해 봐!",
+    image: "./assets/game-h-memory.webp",
+    color: "lilac",
+    reward: 12
+  },
+  {
     id: "h-memory",
     track: "hangul",
     title: "글자 짝 맞추기",
