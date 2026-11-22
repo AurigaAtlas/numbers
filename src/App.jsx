@@ -64,6 +64,7 @@ const defaultState = {
     hangulLevel: 1,
     hangulPlayLevel: 1,
     hangulStars: 0,
+    sequenceStage: 1,
     playedRounds: 0,
     correctAnswers: 0,
     streak: 0,
@@ -156,6 +157,7 @@ function normalizeProgress(raw) {
   progress.playLevel = clamp(progress.playLevel, 1, progress.level);
   progress.hangulLevel = clamp(progress.hangulLevel, 1, hangulLevels.length);
   progress.hangulPlayLevel = clamp(progress.hangulPlayLevel, 1, progress.hangulLevel);
+  if (!Number.isSafeInteger(progress.sequenceStage) || progress.sequenceStage < 1) progress.sequenceStage = 1;
   return progress;
 }
 
@@ -512,7 +514,7 @@ export default function App() {
     const track = trackOf(gameId);
     const level = tracks[track].levels[trackState(profileRef.current.progress, track).playLevel - 1];
     const mastery = profileRef.current.mastery;
-    const nextRound = track === "hangul" ? makeHangulRound(gameId, level, mastery) : makeRound(gameId, level, mastery);
+    const nextRound = track === "hangul" ? makeHangulRound(gameId, level, mastery, profileRef.current.progress.sequenceStage) : makeRound(gameId, level, mastery);
     showGame(nextRound, fresh);
   }
 
@@ -609,6 +611,7 @@ export default function App() {
     }
     const nextProgress = {
       ...withTrackState(current, track, { level: unlocked, playLevel: nextPlayLevel, levelStars }),
+      sequenceStage: finishedRound.gameId === "h-sequence" && correct ? finishedRound.sequenceStage + 1 : current.sequenceStage,
       playedRounds: current.playedRounds + 1,
       correctAnswers: current.correctAnswers + (correct ? 1 : 0),
       streak,
@@ -839,6 +842,27 @@ export default function App() {
     }
     setRound({ ...round, selected, lastWrong: null, next: value + 1 });
     setMessage(`${value} 다음 숫자는 뭘까?`);
+  }
+
+  function toggleSequenceStudy() {
+    if (round?.gameId !== "h-sequence" || round.feedback) return;
+    setRound({ ...round, studying: !round.studying, cursor: 0, retried: round.retried || !round.studying });
+    setMessage(round.studying ? "기억한 순서대로 눌러 봐!" : "천천히 다시 보고 기억해 봐.");
+  }
+
+  function chooseSequence(letter) {
+    if (round?.gameId !== "h-sequence" || round.studying || round.feedback) return;
+    if (letter !== round.sequence[round.cursor]) {
+      sfx.flip();
+      setRound({ ...round, studying: true, cursor: 0, retried: true });
+      setMessage("괜찮아! 같은 글자들을 다시 보고 해 보자.");
+      return;
+    }
+    say(letter);
+    const cursor = round.cursor + 1;
+    const complete = cursor === round.sequence.length;
+    setRound({ ...round, cursor, feedback: complete ? { correct: true } : null });
+    if (complete) finishRound(true, round, { secondTry: Boolean(round.retried) });
   }
 
   function chooseMemory(cardId) {
@@ -1241,6 +1265,8 @@ export default function App() {
               onCountTap={tapCountObject}
               onOrder={chooseOrder}
               onMemory={chooseMemory}
+              onSequence={chooseSequence}
+              onSequenceStudy={toggleSequenceStudy}
               onBalloon={popBalloon}
               onTraced={finishTrace}
               onSay={(text) => say(text)}
@@ -1634,7 +1660,7 @@ const gameShelves = {
   hangul: [
     { label: "듣고 읽기", ids: ["h-listen", "h-picture"] },
     { label: "만들고 쓰기", ids: ["h-build", "h-blend", "h-trace"] },
-    { label: "카드와 풍선", ids: ["h-memory", "h-balloon"] }
+    { label: "카드와 풍선", ids: ["h-memory", "h-sequence", "h-balloon"] }
   ]
 };
 

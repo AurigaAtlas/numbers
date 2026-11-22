@@ -16,6 +16,8 @@ export function GameScreen({
   onCountTap,
   onOrder,
   onMemory,
+  onSequence,
+  onSequenceStudy,
   onBalloon,
   onTraced,
   onSay
@@ -30,7 +32,7 @@ export function GameScreen({
         <div className="play-title">
           <h2>{game.title}</h2>
           <p className="eyebrow">
-            <span className={`level-pill level-${level.id}`}>{level.id}단계 {level.name}</span>
+            <span className={`level-pill level-${level.id}`}>{game.id === "h-sequence" ? `기억 도전 ${round.sequenceStage}단계` : `${level.id}단계 ${level.name}`}</span>
             <span className="eyebrow-text">{game.subtitle}</span>
           </p>
         </div>
@@ -64,6 +66,7 @@ export function GameScreen({
         {game.id === "count" && <CountGame round={round} onCountTap={onCountTap} onAnswer={onAnswer} />}
         {game.id === "order" && <OrderGame round={round} onOrder={onOrder} />}
         {(game.id === "memory" || game.id === "h-memory") && <MemoryGame round={round} onMemory={onMemory} />}
+        {game.id === "h-sequence" && <SequenceGame round={round} onPick={onSequence} onStudy={onSequenceStudy} onSay={onSay} />}
         {game.id === "compare" && <CompareGame round={round} onAnswer={onAnswer} />}
         {game.id === "missing" && <MissingGame round={round} onAnswer={onAnswer} />}
         {game.id === "add" && <AddGame round={round} onAnswer={onAnswer} />}
@@ -194,6 +197,35 @@ function OrderGame({ round, onOrder }) {
           </button>
         ))}
       </div>
+    </>
+  );
+}
+
+function SequenceGame({ round, onPick, onStudy, onSay }) {
+  return (
+    <>
+      <p aria-live="polite">
+        {round.studying ? "왼쪽부터 읽어 봐. 글자를 누르면 소리가 나!" :
+          round.feedback ? "순서를 모두 기억했어!" : `${round.cursor + 1}번째 글자는 뭘까?`}
+      </p>
+      {round.studying ? (
+        <div className="order-track" aria-label="기억할 글자 순서">
+          {round.sequence.map((letter, index) => (
+            <button key={index} className="track-slot is-done n-7" onClick={() => onSay(letter)}>{letter}</button>
+          ))}
+        </div>
+      ) : (
+        <div className={`option-grid options-${round.options.length}`}>
+          {round.options.map((letter) => (
+            <button key={letter} className="number-tile n-7" disabled={Boolean(round.feedback)} onClick={() => onPick(letter)}>
+              <span>{letter}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {!round.feedback && <button className="back-button" onClick={onStudy}>
+        {round.studying ? "다 외웠어!" : "다시 볼래"}
+      </button>}
     </>
   );
 }
